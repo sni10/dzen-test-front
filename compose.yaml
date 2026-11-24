@@ -1,0 +1,11 @@
+# The built SPA in nginx: `docker compose up --build` -> http://localhost:8080
+# The backend runs from dzen-test-back (its compose.yaml, API on http://localhost:8000).
+services:
+  front:
+    build:
+      context: .
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
