@@ -1,0 +1,89 @@
+{
+  "_comment": "Shared markup cases: the backend XhtmlValidator and the frontend validator must agree on every one. error = null means valid; otherwise the expected error code and position (0-based offset).",
+  "cases": [
+    { "text": "Plain text", "error": null },
+    { "text": "", "error": null },
+    { "text": "<i>italic</i> <strong>bold</strong> <code>x = 1</code>", "error": null },
+    { "text": "<a href=\"https://example.com\">link</a>", "error": null },
+    { "text": "<a href=\"http://example.com/?a=1&b=2\" title=\"Example\">link</a>", "error": null },
+    { "text": "<a title=\"Mail me\" href=\"mailto:me@example.com\">mail</a>", "error": null },
+    { "text": "<strong><i>nested</i></strong>", "error": null },
+    { "text": "<code><i>a</i><strong>b</strong></code>", "error": null },
+    { "text": "<i>a</i><i>b</i>", "error": null },
+    { "text": "<i  >spaces</i >", "error": null },
+    { "text": "a < b and b > c", "error": null },
+    { "text": "1 <2 and 3<= 4", "error": null },
+    { "text": "&lt;div&gt; escaped", "error": null },
+    { "text": "multi\nline\n<i>text</i>", "error": null },
+    { "text": "Кириллица <strong>тоже</strong>", "error": null },
+
+    { "text": "<b>bold</b>", "error": { "code": "unknown_tag", "position": 0 } },
+    { "text": "ok <div>x</div>", "error": { "code": "unknown_tag", "position": 3 } },
+    { "text": "<script>alert(1)</script>", "error": { "code": "unknown_tag", "position": 0 } },
+    { "text": "x </b>", "error": { "code": "unknown_tag", "position": 2 } },
+
+    { "text": "<I>upper</I>", "error": { "code": "malformed_tag", "position": 0 } },
+    { "text": "<i/>", "error": { "code": "malformed_tag", "position": 0 } },
+    { "text": "<br/>", "error": { "code": "malformed_tag", "position": 0 } },
+    {
+      "text": "<a href='https://example.com'>single quotes</a>",
+      "error": { "code": "malformed_tag", "position": 0 }
+    },
+    {
+      "text": "<a href=https://example.com>unquoted</a>",
+      "error": { "code": "malformed_tag", "position": 0 }
+    },
+    { "text": "<a href>empty</a>", "error": { "code": "malformed_tag", "position": 0 } },
+    { "text": "<!-- comment -->", "error": { "code": "malformed_tag", "position": 0 } },
+    { "text": "<?php echo 1 ?>", "error": { "code": "malformed_tag", "position": 0 } },
+    { "text": "<i", "error": { "code": "malformed_tag", "position": 0 } },
+    { "text": "text <i>open", "error": { "code": "unclosed_tag", "position": 5 } },
+    { "text": "<strong><i>x</i>", "error": { "code": "unclosed_tag", "position": 0 } },
+
+    { "text": "<i>a</strong>", "error": { "code": "mismatched_closing_tag", "position": 4 } },
+    {
+      "text": "<i><strong>x</i></strong>",
+      "error": { "code": "mismatched_closing_tag", "position": 12 }
+    },
+    { "text": "x</i>", "error": { "code": "unexpected_closing_tag", "position": 1 } },
+
+    { "text": "<a>no href</a>", "error": { "code": "missing_attribute", "position": 0 } },
+    {
+      "text": "<a title=\"t\">no href</a>",
+      "error": { "code": "missing_attribute", "position": 0 }
+    },
+    { "text": "<i class=\"x\">a</i>", "error": { "code": "unknown_attribute", "position": 0 } },
+    {
+      "text": "<a href=\"https://e.com\" onclick=\"x()\">a</a>",
+      "error": { "code": "unknown_attribute", "position": 0 }
+    },
+    {
+      "text": "<a href=\"https://e.com\" href=\"https://f.com\">a</a>",
+      "error": { "code": "duplicate_attribute", "position": 0 }
+    },
+
+    {
+      "text": "<a href=\"javascript:alert(1)\">x</a>",
+      "error": { "code": "unsafe_url", "position": 0 }
+    },
+    {
+      "text": "<a href=\"JavaScript:alert(1)\">x</a>",
+      "error": { "code": "unsafe_url", "position": 0 }
+    },
+    {
+      "text": "<a href=\"data:text/html,x\">x</a>",
+      "error": { "code": "unsafe_url", "position": 0 }
+    },
+    { "text": "<a href=\"/relative\">x</a>", "error": { "code": "unsafe_url", "position": 0 } },
+    { "text": "<a href=\"\">x</a>", "error": { "code": "unsafe_url", "position": 0 } },
+    {
+      "text": "<a href=\"https://a b.com\">x</a>",
+      "error": { "code": "unsafe_url", "position": 0 }
+    },
+
+    {
+      "text": "<a href=\"https://a.com\"><a href=\"https://b.com\">x</a></a>",
+      "error": { "code": "nested_tag", "position": 24 }
+    }
+  ]
+}

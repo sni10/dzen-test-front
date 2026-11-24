@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { fetchReplies } from '@/api/comments'
 import type { Comment } from '@/api/types'
+import CommentForm from '@/components/form/CommentForm.vue'
+import { useReplyStore } from '@/stores/replies'
 import { pluralize } from '@/utils/format'
+import { highlightComment } from '@/utils/highlight'
 
 import CommentCard from './CommentCard.vue'
 
@@ -12,7 +15,10 @@ const MAX_INDENT_DEPTH = 6
 
 const props = defineProps<{ comment: Comment; topLevel?: boolean }>()
 
+const replyStore = useReplyStore()
+
 const loaded = ref<Comment[]>([])
+const posted = ref<Comment[]>([])
 const cursor = ref<string | null>(props.comment.replies?.endCursor ?? null)
 const hasMore = ref(
   props.comment.replies ? props.comment.replies.hasMore : props.comment.repliesCount > 0,
@@ -20,8 +26,16 @@ const hasMore = ref(
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-const replies = computed(() => [...(props.comment.replies?.items ?? []), ...loaded.value])
-const remaining = computed(() => Math.max(props.comment.repliesCount - replies.value.length, 0))
+const replying = computed(() => replyStore.activeId === props.comment.id)
+const replies = computed(() => {
+  const known = [...(props.comment.replies?.items ?? []), ...loaded.value]
+  const ids = new Set(known.map((reply) => reply.id))
+  // Own replies posted here go last (oldest first order); skip them once a page brings them too
+  return [...known, ...posted.value.filter((reply) => !ids.has(reply.id))]
+})
+const remaining = computed(() =>
+  Math.max(props.comment.repliesCount + posted.value.length - replies.value.length, 0),
+)
 const indent = computed(() => props.comment.depth < MAX_INDENT_DEPTH)
 
 async function loadMore() {
@@ -38,11 +52,47 @@ async function loadMore() {
     loading.value = false
   }
 }
+
+function toggleReply() {
+  if (replying.value) replyStore.close(props.comment.id)
+  else replyStore.open(props.comment.id)
+}
+
+async function onReplied(reply: Comment) {
+  replyStore.close(props.comment.id)
+  const parent = {
+    id: props.comment.id,
+    userName: props.comment.userName,
+    text: props.comment.text,
+  }
+  posted.value = [...posted.value, { ...reply, parent }]
+  await nextTick()
+  highlightComment(reply.id)
+}
 </script>
 
 <template>
   <div>
-    <CommentCard :comment="comment" :top-level="topLevel" />
+    <CommentCard
+      :comment="comment"
+      :top-level="topLevel"
+      :replying="replying"
+      @reply="toggleReply"
+    />
+
+    <Transition name="expand">
+      <div
+        v-if="replying"
+        class="mt-3 rounded-xl border border-line bg-card p-4 shadow-sm"
+        :class="indent ? 'ml-4 sm:ml-11' : ''"
+      >
+        <CommentForm
+          :parent="comment"
+          @created="onReplied"
+          @cancel="replyStore.close(comment.id)"
+        />
+      </div>
+    </Transition>
 
     <div v-if="replies.length || hasMore" :class="indent ? 'pl-4 sm:pl-11' : ''">
       <TransitionGroup tag="div" name="reply" class="mt-3 space-y-4">
@@ -71,9 +121,21 @@ async function loadMore() {
 
 <style scoped>
 .reply-enter-active {
-  transition: all 0.25s ease-out;
+  transition: all 0.3s ease-out;
 }
 .reply-enter-from {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.expand-enter-active,
+.expand-leave-active {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.expand-enter-from,
+.expand-leave-to {
   opacity: 0;
   transform: translateY(-6px);
 }

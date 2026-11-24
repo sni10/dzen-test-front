@@ -6,8 +6,10 @@ import type { Comment } from '@/api/types'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import UserAvatar from '@/components/ui/UserAvatar.vue'
 import { formatDate, quoteText } from '@/utils/format'
+import { highlightComment } from '@/utils/highlight'
 
-const props = defineProps<{ comment: Comment; topLevel?: boolean }>()
+const props = defineProps<{ comment: Comment; topLevel?: boolean; replying?: boolean }>()
+const emit = defineEmits<{ reply: [] }>()
 
 const router = useRouter()
 
@@ -25,15 +27,7 @@ const quote = computed(() => (props.comment.parent ? quoteText(props.comment.par
 function goToParent() {
   const id = props.comment.parentId
   if (!id) return
-  const element = document.getElementById(`c-${id}`)
-  if (element) {
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    element.classList.remove('flash')
-    void element.offsetWidth // restart the animation
-    element.classList.add('flash')
-  } else {
-    void router.push({ name: 'thread', params: { id } })
-  }
+  if (!highlightComment(id, 'center')) void router.push({ name: 'thread', params: { id } })
 }
 </script>
 
@@ -90,9 +84,11 @@ function goToParent() {
         <button
           type="button"
           class="icon-button"
-          disabled
-          title="Reply (coming soon)"
+          :class="{ 'bg-white': replying }"
+          title="Reply"
           aria-label="Reply"
+          :aria-expanded="replying"
+          @click="emit('reply')"
         >
           <AppIcon name="reply" />
         </button>
