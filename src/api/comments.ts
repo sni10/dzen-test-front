@@ -1,5 +1,5 @@
 import { gql } from './graphql'
-import type { Attachment, Comment, CommentPage, CommentSort, ReplyPage } from './types'
+import type { Comment, CommentPage, CommentSort, ReplyPage } from './types'
 
 /** How many replies to show per level before "show more" */
 export const REPLIES_PAGE = 10
@@ -89,12 +89,11 @@ export async function fetchThread(id: string, signal?: AbortSignal): Promise<Com
   return data.comment
 }
 
-const ATTACHMENTS_QUERY = `
-query Attachments($id: ID!) { comment(id: $id) { attachments { ${ATTACHMENT_FIELDS} } } }`
+const SINCE_QUERY = `
+query Since($lastId: ID!) { commentsSince(lastId: $lastId) { ${REPLY_FIELDS} } }`
 
-export async function fetchAttachments(commentId: string): Promise<Attachment[]> {
-  const data = await gql<{ comment: { attachments: Attachment[] } | null }>(ATTACHMENTS_QUERY, {
-    id: commentId,
-  })
-  return data.comment?.attachments ?? []
+/** Comments posted after lastId (oldest first): what a dropped WebSocket missed */
+export async function fetchSince(lastId: string): Promise<Comment[]> {
+  const data = await gql<{ commentsSince: Comment[] }>(SINCE_QUERY, { lastId })
+  return data.commentsSince
 }

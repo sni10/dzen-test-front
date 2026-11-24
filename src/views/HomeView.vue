@@ -8,6 +8,7 @@ import CommentTable from '@/components/comments/CommentTable.vue'
 import CommentForm from '@/components/form/CommentForm.vue'
 import AppPagination from '@/components/ui/AppPagination.vue'
 import { useAsync } from '@/composables/useAsync'
+import { useLiveStore } from '@/stores/live'
 import { pluralize } from '@/utils/format'
 import { highlightComment } from '@/utils/highlight'
 import {
@@ -41,25 +42,54 @@ function onSort(column: SortColumn) {
   setQuery({ sort: sortToQuery(toggleSort(sort.value, column)), page: 1 })
 }
 
+const live = useLiveStore()
+
+/** Newest-first first page: new top-level comments (mine or live) slide in on top */
+const isDefaultView = computed(
+  () => page.value === 1 && sortToQuery(sort.value) === sortToQuery(DEFAULT_SORT),
+)
+
 /** Where my last comment went if it is not visible here (another page or sort) */
 const postedElsewhere = ref<Comment | null>(null)
 
-/** Newest-first first page: insert the comment on top at once; otherwise offer a link to it */
-async function onCreated(comment: Comment) {
+const shownIds = computed(() => new Set(feed.data.value?.items.map((comment) => comment.id)))
+/** Live comments this view does not show: another page or sort — offered as a banner, not inserted */
+const pending = computed(() =>
+  live.topLevel.filter(
+    (comment) => !shownIds.value.has(comment.id) && comment.id !== postedElsewhere.value?.id,
+  ),
+)
+
+function collectIds(comments: Comment[]): string[] {
+  return comments.flatMap((c) => [c.id, ...collectIds(c.replies?.items ?? [])])
+}
+
+watch(
+  () => feed.data.value,
+  (data) => live.remember(collectIds(data?.items ?? [])),
+)
+
+watch([() => live.topLevel, () => feed.data.value], async () => {
   const current = feed.data.value
-  const isDefaultView = page.value === 1 && sortToQuery(sort.value) === sortToQuery(DEFAULT_SORT)
-  if (!current || !isDefaultView) {
-    postedElsewhere.value = comment
-    return
-  }
-  postedElsewhere.value = null
+  if (!current || !isDefaultView.value || !pending.value.length) return
+  const fresh = pending.value
   feed.data.value = {
     ...current,
-    items: [comment, ...current.items].slice(0, current.pageSize),
-    totalCount: current.totalCount + 1,
+    items: [...fresh, ...current.items].slice(0, current.pageSize),
+    totalCount: current.totalCount + fresh.length,
   }
   await nextTick()
-  highlightComment(comment.id)
+  fresh.forEach((comment) => highlightComment(comment.id))
+})
+
+function onCreated(comment: Comment) {
+  postedElsewhere.value = isDefaultView.value ? null : comment
+  live.addComment(comment) // the same path as comments of other people: no duplicate when the event arrives
+}
+
+function showPending() {
+  void router.push({ query: {} })
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function onPage(next: number) {
@@ -104,6 +134,17 @@ function onPage(next: number) {
           ✕
         </button>
       </p>
+    </Transition>
+
+    <Transition name="fade">
+      <button
+        v-if="!isDefaultView && pending.length"
+        type="button"
+        class="w-full rounded-xl border border-accent/30 bg-accent/5 px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10"
+        @click="showPending"
+      >
+        {{ pluralize(pending.length, 'new comment', 'new comments') }} — show the newest
+      </button>
     </Transition>
 
     <p
