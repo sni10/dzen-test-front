@@ -1,50 +1,25 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed } from 'vue'
 
-import { fetchAttachments } from '@/api/comments'
 import type { Attachment } from '@/api/types'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import { useLightboxStore } from '@/stores/lightbox'
+import { useLiveStore } from '@/stores/live'
 import { formatSize } from '@/utils/format'
-
-const POLL_MS = 1500
-const POLL_TRIES = 20
 
 const props = defineProps<{ commentId: string; attachments: Attachment[] }>()
 
 const lightbox = useLightboxStore()
-const items = ref<Attachment[]>(props.attachments)
-const processing = computed(() => items.value.some((item) => item.status === 'processing'))
+const live = useLiveStore()
 
-// ponytail: polls while an image is being resized; replace with the WebSocket attachment.ready event
-let timer: ReturnType<typeof setTimeout> | undefined
-let tries = 0
-
-async function poll() {
-  tries += 1
-  try {
-    items.value = await fetchAttachments(props.commentId)
-  } catch {
-    // a missed poll is fine, the next one or a reload catches up
-  }
-  schedule()
-}
-
-function schedule() {
-  clearTimeout(timer)
-  if (processing.value && tries < POLL_TRIES) timer = setTimeout(poll, POLL_MS)
-}
-
-watch(
-  () => props.attachments,
-  (next) => {
-    items.value = next
-    tries = 0
-    schedule()
-  },
-  { immediate: true },
-)
-onBeforeUnmount(() => clearTimeout(timer))
+/** The loaded attachments, replaced by their live updates (attachment.updated: an image finished resizing) */
+const items = computed(() => {
+  const updates = live.attachments[props.commentId] ?? []
+  const merged = props.attachments.map(
+    (item) => updates.find((update) => update.id === item.id) ?? item,
+  )
+  return [...merged, ...updates.filter((update) => !merged.some((item) => item.id === update.id))]
+})
 </script>
 
 <template>
