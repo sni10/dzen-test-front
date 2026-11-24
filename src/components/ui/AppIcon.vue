@@ -11,6 +11,8 @@ const PATHS = {
   sortDesc: 'M12 5v14M7 14l5 5 5-5',
   chevronLeft: 'M15 6l-6 6 6 6',
   chevronRight: 'M9 6l6 6-6 6',
+  refresh: 'M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5',
+  eye: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
 } as const
 
 export type IconName = keyof typeof PATHS
