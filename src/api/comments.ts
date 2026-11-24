@@ -1,11 +1,14 @@
 import { gql } from './graphql'
-import type { Comment, CommentPage, CommentSort, ReplyPage } from './types'
+import type { Attachment, Comment, CommentPage, CommentSort, ReplyPage } from './types'
 
 /** How many replies to show per level before "show more" */
 export const REPLIES_PAGE = 10
 
+const ATTACHMENT_FIELDS = 'id kind url originalName size width height status'
+
 const FIELDS = `
   id userName email homePage text isUfo score repliesCount depth createdAt parentId rootId
+  attachments { ${ATTACHMENT_FIELDS} }
 `
 const REPLY_FIELDS = `${FIELDS} parent { id userName text }`
 
@@ -84,4 +87,14 @@ export async function fetchThread(id: string, signal?: AbortSignal): Promise<Com
     signal,
   )
   return data.comment
+}
+
+const ATTACHMENTS_QUERY = `
+query Attachments($id: ID!) { comment(id: $id) { attachments { ${ATTACHMENT_FIELDS} } } }`
+
+export async function fetchAttachments(commentId: string): Promise<Attachment[]> {
+  const data = await gql<{ comment: { attachments: Attachment[] } | null }>(ATTACHMENTS_QUERY, {
+    id: commentId,
+  })
+  return data.comment?.attachments ?? []
 }

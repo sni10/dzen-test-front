@@ -8,6 +8,8 @@ import UserAvatar from '@/components/ui/UserAvatar.vue'
 import { formatDate, quoteText } from '@/utils/format'
 import { highlightComment } from '@/utils/highlight'
 
+import CommentAttachments from './CommentAttachments.vue'
+
 const props = defineProps<{ comment: Comment; topLevel?: boolean; replying?: boolean }>()
 const emit = defineEmits<{ reply: [] }>()
 
@@ -128,8 +130,15 @@ function goToParent() {
         A UFO flew in and published this inscription here.
       </p>
       <!-- Sanitized on the server (allowlist: a, code, i, strong); the only v-html in the app -->
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <div v-else class="comment-text leading-relaxed break-words" v-html="comment.text" />
+      <template v-else>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <div class="comment-text leading-relaxed break-words" v-html="comment.text" />
+        <CommentAttachments
+          v-if="comment.attachments?.length"
+          :comment-id="comment.id"
+          :attachments="comment.attachments"
+        />
+      </template>
     </div>
   </article>
 </template>

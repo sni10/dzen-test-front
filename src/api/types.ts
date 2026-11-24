@@ -12,6 +12,20 @@ export interface ReplyPage {
   endCursor: string | null
 }
 
+export interface Attachment {
+  id: string
+  /** image: JPG / GIF / PNG fitted into 320x240 on the server; text: TXT up to 100 KB */
+  kind: 'image' | 'text'
+  /** Relative URL on the same origin (/media/...) */
+  url: string
+  originalName: string
+  size: number
+  width: number | null
+  height: number | null
+  /** processing: the image is being resized in the background */
+  status: 'processing' | 'ready' | 'failed'
+}
+
 export interface Comment {
   id: string
   userName: string
@@ -27,6 +41,7 @@ export interface Comment {
   parentId: string | null
   rootId: string | null
   parent?: Pick<Comment, 'id' | 'userName' | 'text'> | null
+  attachments?: Attachment[]
   replies?: ReplyPage
 }
 

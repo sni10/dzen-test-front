@@ -9,3 +9,7 @@ beforeEach(() => {
   config.global.plugins = [pinia]
   localStorage.clear()
 })
+
+// Object URLs for the local preview of a chosen image: Node's own implementation rejects jsdom's File
+URL.createObjectURL = () => 'blob:preview'
+URL.revokeObjectURL = () => {}

@@ -44,6 +44,7 @@ describe('form rules (same as the backend serializer)', () => {
     homePage: '',
     text: 'Hello <i>world</i>',
     captchaAnswer: 'Ab3Cd',
+    attachment: null,
   }
 
   it('accepts a valid form', () => {

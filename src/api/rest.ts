@@ -34,10 +34,18 @@ export async function request<T>(
       method: init.method ?? 'GET',
       headers: {
         Accept: 'application/json',
-        ...(init.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        // FormData sets its own multipart Content-Type with the boundary
+        ...(init.body === undefined || init.body instanceof FormData
+          ? {}
+          : { 'Content-Type': 'application/json' }),
       },
       credentials: 'same-origin', // the guest cookie
-      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      body:
+        init.body === undefined
+          ? undefined
+          : init.body instanceof FormData
+            ? init.body
+            : JSON.stringify(init.body),
     })
   } catch {
     throw new ApiError('Network error, check the connection', 0)

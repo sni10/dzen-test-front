@@ -12,10 +12,12 @@ import {
   type FieldErrors,
   type FormField,
   TEXT_MAX_LENGTH,
+  validateAttachment,
   validateField,
   validateForm,
 } from '@/utils/validation'
 
+import AttachmentField from './AttachmentField.vue'
 import CaptchaField from './CaptchaField.vue'
 import TagToolbar from './TagToolbar.vue'
 
@@ -31,6 +33,7 @@ const form = reactive<NewComment>({
   parentId: props.parent?.id ?? null,
   captchaKey: '',
   captchaAnswer: '',
+  attachment: null,
 })
 const errors = ref<FieldErrors>({})
 const touched = reactive(new Set<FormField>())
@@ -83,10 +86,15 @@ async function togglePreview() {
   }
 }
 
+function checkAttachment() {
+  errors.value = { ...errors.value, attachment: validateAttachment(form.attachment) }
+}
+
 function focusFirstError() {
   const first = (['userName', 'email', 'homePage', 'text', 'captchaAnswer'] as const).find(
     (field) => errors.value[field],
   )
+  if (!first && errors.value.attachment) return document.getElementById(`${id}-attachment`)?.focus()
   if (first === 'captchaAnswer') return captcha.value?.focus()
   if (first === 'text') return void showProblem()
   if (first) document.getElementById(`${id}-${first}`)?.focus()
@@ -120,6 +128,7 @@ async function submit() {
       homePage: form.homePage.trim(),
     })
     form.text = ''
+    form.attachment = null
     preview.value = null
     errors.value = {}
     touched.clear()
@@ -262,6 +271,13 @@ async function submit() {
         </span>
       </div>
     </div>
+
+    <AttachmentField
+      v-model="form.attachment"
+      :input-id="`${id}-attachment`"
+      :error="errors.attachment"
+      @change="checkAttachment"
+    />
 
     <CaptchaField
       ref="captcha"

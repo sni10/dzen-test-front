@@ -13,6 +13,12 @@ import { type FetchMock, makeComment, makePage, mockFetch } from './helpers/comm
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status })
 
+/** A request body as a plain object: JSON for GraphQL / preview, multipart for posting */
+function bodyOf(init: RequestInit): Record<string, unknown> {
+  if (init.body instanceof FormData) return Object.fromEntries(init.body.entries())
+  return init.body ? JSON.parse(String(init.body)) : {}
+}
+
 interface Backend {
   created?: (body: Record<string, unknown>) => Response
   feed?: unknown
@@ -22,7 +28,7 @@ interface Backend {
 function backend({ created, feed }: Backend = {}): FetchMock {
   let captchas = 0
   return mockFetch(async (url, init) => {
-    const body = init.body ? JSON.parse(String(init.body)) : {}
+    const body = bodyOf(init)
     if (url === '/api/captcha/') {
       captchas += 1
       return json({ key: `key${captchas}`, image: `data:image/png;base64,${captchas}`, ttl: 300 })
@@ -34,8 +40,8 @@ function backend({ created, feed }: Backend = {}): FetchMock {
         json(
           {
             id: 500,
-            parent: body.parent,
-            root: body.parent,
+            parent: body.parent ? Number(body.parent) : null,
+            root: body.parent ? Number(body.parent) : null,
             depth: body.parent ? 1 : 0,
             user_name: body.user_name,
             email: body.email,
@@ -45,6 +51,7 @@ function backend({ created, feed }: Backend = {}): FetchMock {
             replies_count: 0,
             score: 0,
             created_at: '2022-05-22T22:30:00',
+            attachments: [],
           },
           201,
         )
@@ -55,9 +62,7 @@ function backend({ created, feed }: Backend = {}): FetchMock {
 }
 
 const posts = (fetchMock: FetchMock) =>
-  fetchMock.mock.calls
-    .filter(([url]) => url === '/api/comments/')
-    .map(([, init]) => JSON.parse(String(init.body)))
+  fetchMock.mock.calls.filter(([url]) => url === '/api/comments/').map(([, init]) => bodyOf(init))
 
 async function fill(wrapper: VueWrapper, values: Record<string, string>) {
   for (const [label, value] of Object.entries(values)) {
@@ -147,7 +152,6 @@ describe('CommentForm', () => {
         email: 'rum@example.com',
         home_page: 'https://rum.dev',
         text: 'Hello <i>world</i>',
-        parent: null,
         captcha_key: 'key1',
         captcha_answer: 'Ab3Cd',
       },
@@ -308,7 +312,7 @@ describe('replying in a thread', () => {
     await wrapper.find('form[aria-label="Reply to Anonym"]').trigger('submit')
     await flushPromises()
 
-    expect(posts(fetchMock)[0]).toMatchObject({ parent: 42 })
+    expect(posts(fetchMock)[0]).toMatchObject({ parent: '42' })
     expect(wrapper.find('form[aria-label^="Reply to"]').exists()).toBe(false)
     const reply = wrapper.find('#c-500')
     expect(reply.exists()).toBe(true)
