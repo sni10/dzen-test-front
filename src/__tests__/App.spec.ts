@@ -74,7 +74,7 @@ describe('home page', () => {
     const wrapper = await mountAt('/?sort=email', fetchMock)
 
     expect(wrapper.text()).toContain('Server error (503)')
-    expect(wrapper.find('button.underline').text()).toBe('Retry')
+    expect(wrapper.findAll('button').some((button) => button.text() === 'Retry')).toBe(true)
   })
 })
 

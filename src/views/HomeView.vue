@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, nextTick, ref, watch } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { fetchFeed } from '@/api/comments'
+import type { Comment } from '@/api/types'
 import CommentTable from '@/components/comments/CommentTable.vue'
+import CommentForm from '@/components/form/CommentForm.vue'
 import AppPagination from '@/components/ui/AppPagination.vue'
 import { useAsync } from '@/composables/useAsync'
 import { pluralize } from '@/utils/format'
+import { highlightComment } from '@/utils/highlight'
 import {
   type SortColumn,
   parsePage,
+  DEFAULT_SORT,
   parseSort,
   sortToEnum,
   sortToQuery,
@@ -37,6 +41,27 @@ function onSort(column: SortColumn) {
   setQuery({ sort: sortToQuery(toggleSort(sort.value, column)), page: 1 })
 }
 
+/** Where my last comment went if it is not visible here (another page or sort) */
+const postedElsewhere = ref<Comment | null>(null)
+
+/** Newest-first first page: insert the comment on top at once; otherwise offer a link to it */
+async function onCreated(comment: Comment) {
+  const current = feed.data.value
+  const isDefaultView = page.value === 1 && sortToQuery(sort.value) === sortToQuery(DEFAULT_SORT)
+  if (!current || !isDefaultView) {
+    postedElsewhere.value = comment
+    return
+  }
+  postedElsewhere.value = null
+  feed.data.value = {
+    ...current,
+    items: [comment, ...current.items].slice(0, current.pageSize),
+    totalCount: current.totalCount + 1,
+  }
+  await nextTick()
+  highlightComment(comment.id)
+}
+
 function onPage(next: number) {
   setQuery({ page: next })
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -51,6 +76,35 @@ function onPage(next: number) {
         {{ pluralize(feed.data.value.totalCount, 'comment', 'comments') }}
       </span>
     </div>
+
+    <section class="rounded-2xl border border-line bg-card p-4 shadow-sm sm:p-5">
+      <h2 class="mb-4 text-lg font-semibold">Leave a comment</h2>
+      <CommentForm @created="onCreated" />
+    </section>
+
+    <Transition name="fade">
+      <p
+        v-if="postedElsewhere"
+        class="flex flex-wrap items-center gap-2 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm"
+        role="status"
+      >
+        Your comment is posted.
+        <RouterLink
+          :to="{ name: 'thread', params: { id: postedElsewhere.id } }"
+          class="font-semibold"
+        >
+          Show it
+        </RouterLink>
+        <button
+          type="button"
+          class="ml-auto text-muted hover:text-ink"
+          aria-label="Dismiss"
+          @click="postedElsewhere = null"
+        >
+          ✕
+        </button>
+      </p>
+    </Transition>
 
     <p
       v-if="feed.error.value"
@@ -83,3 +137,14 @@ function onPage(next: number) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
