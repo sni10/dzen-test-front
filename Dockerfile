@@ -4,11 +4,10 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-# The API address is baked into the bundle at build time (compose.yaml locally, a repository variable in CI).
-# .env is not copied into the image (.dockerignore).
-ARG VITE_API_URL=http://localhost:8000
+# No API address in the bundle: the SPA calls relative URLs (/api, /graphql, /ws) and the proxy in front of it
+# (Caddy) routes them to the backend on the same origin. .env is not copied into the image (.dockerignore).
 ARG APP_VERSION=dev
-ENV VITE_API_URL=${VITE_API_URL} VITE_APP_VERSION=${APP_VERSION}
+ENV VITE_APP_VERSION=${APP_VERSION}
 RUN npm run build-only
 
 FROM nginxinc/nginx-unprivileged:1.29-alpine

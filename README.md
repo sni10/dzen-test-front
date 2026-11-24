@@ -8,22 +8,31 @@ Backend: [dzen-test-back](https://github.com/sni10/dzen-test-back) (Django, Grap
 
 > Work in progress.
 
+## How it talks to the backend
+
+The SPA and the API share **one origin**: the code calls relative URLs (`/graphql`, `/api/...`, `/ws/...`,
+`/media/...`) and a proxy routes them to Django. No API address is baked into the build, so one image runs on any
+host and no CORS is needed.
+
+| Where | Proxy |
+|---|---|
+| Production / full local stack | Caddy (from `dzen-test-back`): `/api`, `/graphql`, `/ws`, `/media`, `/admin` → Django, everything else → this SPA (nginx) |
+| `npm run dev` | the Vite dev server proxies the same paths to `API_PROXY_TARGET` (default http://localhost:8000) |
+
 ## Run
 
-Start the backend first (`dzen-test-back`: `cp .env.example .env && docker compose up --build`, API on
-http://localhost:8000). The two repositories are expected side by side.
-
-**Docker** (built SPA in nginx):
+**Everything in Docker** — clone both repositories side by side and start the backend's compose, which builds this
+SPA too:
 
 ```bash
+git clone https://github.com/sni10/dzen-test-back.git
 git clone https://github.com/sni10/dzen-test-front.git
-cd dzen-test-front
-docker compose up --build
+cd dzen-test-back
+cp .env.example .env
+docker compose up --build      # http://localhost:8080
 ```
 
-Open http://localhost:8080.
-
-**Development** (Node 24):
+**Development** (Node 24) — the backend running (`docker compose up` in `dzen-test-back`), then:
 
 ```bash
 cp .env.example .env

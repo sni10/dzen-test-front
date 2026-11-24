@@ -105,7 +105,6 @@ jobs:
         with:
           push: true
           build-args: |
-            VITE_API_URL=${{ vars.API_URL }}
             APP_VERSION=${{ needs.release.outputs.version }}
           tags: |
             ghcr.io/${{ github.repository }}:${{ github.sha }}
