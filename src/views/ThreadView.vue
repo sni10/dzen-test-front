@@ -3,6 +3,8 @@ import { computed, nextTick, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 import { fetchThread } from '@/api/comments'
+import { feedPath } from '@/router'
+import AppIcon from '@/components/ui/AppIcon.vue'
 import CommentThread from '@/components/comments/CommentThread.vue'
 import { useAsync } from '@/composables/useAsync'
 
@@ -24,7 +26,10 @@ watch(
 
 <template>
   <div class="space-y-5">
-    <RouterLink to="/" class="text-sm font-medium">← All comments</RouterLink>
+    <RouterLink :to="feedPath" class="btn-back">
+      <AppIcon name="chevronLeft" :size="16" />
+      All comments
+    </RouterLink>
 
     <p
       v-if="thread.error.value"
