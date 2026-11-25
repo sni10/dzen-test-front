@@ -88,5 +88,27 @@ export const useAuthStore = defineStore('auth', () => {
 
   setSessionHooks(token, refresh)
 
-  return { user, access, ready, isSignedIn, token, refresh, restore, login, register, logout }
+  /** After a password change the server signs out every other session and hands this one a new token */
+  function setAccess(token: string) {
+    access.value = token
+  }
+
+  function setHomePage(homePage: string) {
+    if (user.value) user.value = { ...user.value, homePage }
+  }
+
+  return {
+    user,
+    access,
+    ready,
+    isSignedIn,
+    token,
+    refresh,
+    restore,
+    login,
+    register,
+    logout,
+    setAccess,
+    setHomePage,
+  }
 })

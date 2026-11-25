@@ -37,8 +37,14 @@ const indicator = computed(
       <!-- Nothing until the session restore finishes: no "Sign in" flash for a signed-in user -->
       <div v-if="auth.ready" class="ml-auto flex items-center gap-2 text-sm">
         <template v-if="auth.user">
-          <UserAvatar :name="auth.user.username" :size="30" />
-          <span class="hidden font-semibold sm:inline">{{ auth.user.username }}</span>
+          <RouterLink
+            :to="{ name: 'me' }"
+            class="flex items-center gap-2 rounded-lg px-1 text-ink hover:text-accent"
+            title="My cabinet"
+          >
+            <UserAvatar :name="auth.user.username" :size="30" />
+            <span class="hidden font-semibold sm:inline">{{ auth.user.username }}</span>
+          </RouterLink>
           <button type="button" class="btn-ghost px-2 py-1" @click="auth.logout()">Sign out</button>
         </template>
         <template v-else>
