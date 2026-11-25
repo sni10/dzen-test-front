@@ -56,8 +56,9 @@ export function useReactions(comment: () => Comment) {
     }
   }
 
-  async function toggleBookmark() {
-    if (!canReact.value || busy) return
+  /** Resolves to the bookmark state once the server has answered (unchanged when it refused) */
+  async function toggleBookmark(): Promise<boolean> {
+    if (!canReact.value || busy) return bookmarked.value
     busy = true
     error.value = null
     const before = bookmarked.value
@@ -71,6 +72,7 @@ export function useReactions(comment: () => Comment) {
     } finally {
       busy = false
     }
+    return bookmarked.value
   }
 
   return { myVote, bookmarked, score, canReact, canVote, error, toggleVote, toggleBookmark }
