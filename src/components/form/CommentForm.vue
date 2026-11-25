@@ -55,6 +55,7 @@ watch(
   (user) => {
     form.userName = user?.username ?? author.fields.userName
     form.email = user?.email ?? author.fields.email
+    if (user?.homePage && !form.homePage) form.homePage = user.homePage
     errors.value = { ...errors.value, userName: undefined, email: undefined }
   },
   { immediate: true },

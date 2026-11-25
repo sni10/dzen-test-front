@@ -167,7 +167,15 @@ describe('the token on requests', () => {
 })
 
 describe('auth dialog and header', () => {
-  const router = () => createRouter({ history: createMemoryHistory(), routes: [] })
+  const stub = { template: '<div />' }
+  const router = () =>
+    createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', component: stub },
+        { path: '/me', name: 'me', component: stub },
+      ],
+    })
 
   async function mountHeader(fetchMock: FetchMock) {
     vi.stubGlobal('fetch', fetchMock)

@@ -10,7 +10,13 @@ import { highlightComment } from '@/utils/highlight'
 
 import CommentAttachments from './CommentAttachments.vue'
 
-const props = defineProps<{ comment: Comment; topLevel?: boolean; replying?: boolean }>()
+const props = defineProps<{
+  comment: Comment
+  topLevel?: boolean
+  replying?: boolean
+  /** Lists outside the tree (my comments) have nowhere to open a reply form */
+  noReply?: boolean
+}>()
 const emit = defineEmits<{ reply: [] }>()
 
 const router = useRouter()
@@ -84,6 +90,7 @@ function goToParent() {
           <AppIcon name="bookmark" />
         </button>
         <button
+          v-if="!noReply"
           type="button"
           class="icon-button"
           :class="{ 'bg-white': replying }"
