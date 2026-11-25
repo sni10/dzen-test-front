@@ -9,6 +9,7 @@ import { useAuthStore } from './auth'
 type LiveEvent =
   | { type: 'comment.created'; comment: Comment }
   | { type: 'attachment.updated'; commentId: string; attachment: Attachment }
+  | { type: 'comment.score'; commentId: string; score: number }
 
 export type LiveStatus = 'connecting' | 'online' | 'offline'
 
@@ -25,6 +26,8 @@ export const useLiveStore = defineStore('live', () => {
   const topLevel = ref<Comment[]>([])
   const replies = reactive<Record<string, Comment[]>>({})
   const attachments = reactive<Record<string, Attachment[]>>({})
+  /** The latest rating of a comment, from anyone's vote */
+  const scores = reactive<Record<string, number>>({})
 
   let lastId = 0
   let socket: WebSocket | null = null
@@ -48,6 +51,7 @@ export const useLiveStore = defineStore('live', () => {
 
   function apply(event: LiveEvent) {
     if (event.type === 'comment.created') addComment(event.comment)
+    else if (event.type === 'comment.score') scores[event.commentId] = event.score
     else if (event.type === 'attachment.updated') {
       const current = attachments[event.commentId] ?? []
       attachments[event.commentId] = [
@@ -124,6 +128,7 @@ export const useLiveStore = defineStore('live', () => {
     topLevel,
     replies,
     attachments,
+    scores,
     remember,
     addComment,
     connect,
