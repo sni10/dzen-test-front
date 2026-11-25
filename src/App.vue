@@ -1,14 +1,25 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue'
+import { onBeforeUnmount, onMounted, watch } from 'vue'
 import { RouterView } from 'vue-router'
 
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppLightbox from '@/components/ui/AppLightbox.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useLiveStore } from '@/stores/live'
 
+const auth = useAuthStore()
 // One WebSocket for the whole app: new comments and finished images arrive without reloading
 const live = useLiveStore()
-onMounted(() => live.connect())
+
+onMounted(async () => {
+  await auth.restore() // the session from the refresh cookie first: the socket opens as the right user
+  await live.connect()
+  // Signing in or out changes what this visitor may see (own shadowed comments): reopen as the new user
+  watch(
+    () => auth.user?.id,
+    () => void live.reconnect(),
+  )
+})
 onBeforeUnmount(() => live.disconnect())
 </script>
 

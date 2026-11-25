@@ -19,19 +19,19 @@ afterEach(() => {
 })
 
 describe('live store', () => {
-  it('connects to /ws/comments/ on the same origin and reports its status', () => {
+  it('connects to /ws/comments/ on the same origin and reports its status', async () => {
     const live = useLiveStore()
 
-    live.connect()
+    await live.connect()
     expect(socket().url).toBe(`ws://${location.host}/ws/comments/`)
     expect(live.status).toBe('connecting')
     socket().open()
     expect(live.status).toBe('online')
   })
 
-  it('collects new comments and replies once each, and attachment updates', () => {
+  it('collects new comments and replies once each, and attachment updates', async () => {
     const live = useLiveStore()
-    live.connect()
+    await live.connect()
     socket().open()
     const top = makeComment({ id: '10' })
     const reply = makeComment({ id: '11', parentId: '10' })
@@ -58,7 +58,7 @@ describe('live store', () => {
     vi.stubGlobal('fetch', fetchMock)
     const live = useLiveStore()
     live.remember(['7', '30'])
-    live.connect()
+    await live.connect()
     socket().open()
 
     socket().drop()
@@ -81,7 +81,7 @@ describe('live store', () => {
   it('stops reconnecting after disconnect()', async () => {
     vi.useFakeTimers()
     const live = useLiveStore()
-    live.connect()
+    await live.connect()
 
     live.disconnect()
     await vi.advanceTimersByTimeAsync(60_000)
