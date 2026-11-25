@@ -117,3 +117,33 @@ export async function fetchStats(): Promise<Stats> {
   )
   return data.stats
 }
+
+export interface SearchHit {
+  comment: Comment
+  /** HTML from the server: the text escaped, <mark> around the matches */
+  highlight: string | null
+}
+
+export interface SearchPage {
+  items: SearchHit[]
+  totalCount: number
+  page: number
+  pageCount: number
+}
+
+const SEARCH_QUERY = `
+query Search($query: String!, $page: Int!) {
+  search(query: $query, page: $page) {
+    totalCount page pageCount
+    items { highlight comment { ${REPLY_FIELDS} } }
+  }
+}`
+
+export async function searchComments(
+  query: string,
+  page: number,
+  signal?: AbortSignal,
+): Promise<SearchPage> {
+  const data = await gql<{ search: SearchPage }>(SEARCH_QUERY, { query, page }, signal)
+  return data.search
+}

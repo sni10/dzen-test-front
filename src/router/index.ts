@@ -8,6 +8,7 @@ const router = createRouter({
     { path: '/', name: 'home', component: HomeView },
     { path: '/c/:id(\\d+)', name: 'thread', component: () => import('@/views/ThreadView.vue') },
     { path: '/me', name: 'me', component: () => import('@/views/MeView.vue') },
+    { path: '/search', name: 'search', component: () => import('@/views/SearchView.vue') },
     {
       path: '/moderation',
       name: 'moderation',

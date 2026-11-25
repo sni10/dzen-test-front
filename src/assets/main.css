@@ -57,3 +57,8 @@
     transition-duration: 1ms !important;
   }
 }
+
+/* Search matches inside highlighted snippets */
+mark {
+  @apply rounded-sm bg-amber-200/70 px-0.5 text-ink;
+}
