@@ -117,9 +117,12 @@ function showPending() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+/** The table's top (the sort header and the upper pages): where a page change brings the reader */
+const tableTop = ref<HTMLElement | null>(null)
+
 function onPage(next: number) {
   setQuery({ page: next })
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  tableTop.value?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
 }
 </script>
 
@@ -189,7 +192,8 @@ function onPage(next: number) {
       >
         {{ page > 1 ? 'No comments on this page.' : 'No comments yet — be the first.' }}
       </p>
-      <template v-else>
+      <div v-else ref="tableTop" class="scroll-mt-4 space-y-4">
+        <AppPagination :page="page" :page-count="feed.data.value.pageCount" @change="onPage" />
         <CommentTable
           :comments="feed.data.value.items"
           :sort="sort"
@@ -197,7 +201,7 @@ function onPage(next: number) {
           @sort="onSort"
         />
         <AppPagination :page="page" :page-count="feed.data.value.pageCount" @change="onPage" />
-      </template>
+      </div>
     </template>
 
     <div v-else class="space-y-4" aria-busy="true">
