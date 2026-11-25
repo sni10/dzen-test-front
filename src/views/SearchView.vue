@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { searchComments } from '@/api/comments'
+import { feedPath } from '@/router'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import AppPagination from '@/components/ui/AppPagination.vue'
 import UserAvatar from '@/components/ui/UserAvatar.vue'
@@ -48,7 +49,10 @@ function onPage(next: number) {
 
 <template>
   <div class="space-y-5">
-    <RouterLink to="/" class="text-sm font-medium">← All comments</RouterLink>
+    <RouterLink :to="feedPath" class="btn-back">
+      <AppIcon name="chevronLeft" :size="16" />
+      All comments
+    </RouterLink>
 
     <form class="flex gap-2" role="search" @submit.prevent="submit">
       <label for="search-page-input" class="sr-only">Search comments</label>
