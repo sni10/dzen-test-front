@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { ApiError } from '@/api/rest'
+import AppIcon from '@/components/ui/AppIcon.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
@@ -39,7 +40,10 @@ async function submit() {
 
 <template>
   <div class="mx-auto max-w-sm space-y-5">
-    <RouterLink to="/" class="text-sm font-medium">← All comments</RouterLink>
+    <RouterLink to="/" class="btn-back">
+      <AppIcon name="chevronLeft" :size="16" />
+      All comments
+    </RouterLink>
 
     <section class="space-y-4 rounded-2xl border border-line bg-card p-6 shadow-sm">
       <h1 class="text-xl font-bold">Set a new password</h1>

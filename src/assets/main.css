@@ -43,6 +43,11 @@
     @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 font-semibold text-white transition-colors hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60;
   }
 
+  /* "← All comments": a visible way back at the top of inner pages */
+  .btn-back {
+    @apply -mt-2 inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-sm font-semibold text-ink no-underline shadow-sm transition-colors hover:border-accent hover:text-accent;
+  }
+
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 font-medium text-ink transition-colors hover:bg-card-header disabled:opacity-60;
   }

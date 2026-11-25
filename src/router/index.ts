@@ -1,3 +1,4 @@
+import { ref } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 import HomeView from '@/views/HomeView.vue'
@@ -22,6 +23,12 @@ const router = createRouter({
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
   scrollBehavior: (_to, _from, saved) => saved ?? undefined,
+})
+
+/** The feed as it was last seen (page and sort): "← All comments" returns there */
+export const feedPath = ref('/')
+router.afterEach((to) => {
+  if (to.name === 'home') feedPath.value = to.fullPath
 })
 
 export default router

@@ -1,4 +1,4 @@
-import { flushPromises, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import App from '../App.vue'
@@ -14,6 +14,7 @@ import {
 } from './helpers/comments'
 
 afterEach(() => vi.unstubAllGlobals())
+enableAutoUnmount(afterEach) // the router is shared: an old App would react to the next test's navigation
 
 async function mountAt(path: string, fetchMock: FetchMock) {
   vi.stubGlobal('fetch', fetchMock)
@@ -94,5 +95,34 @@ describe('thread page', () => {
     const wrapper = await mountAt('/c/424242', mockFetch(graphqlFetch({ comment: null })))
 
     expect(wrapper.text()).toContain('does not exist')
+  })
+})
+
+describe('back from a thread', () => {
+  it('returns to the same feed page and place without reloading it', async () => {
+    const opened = makeComment({ id: '42', userName: 'Rum8' })
+    const fetchMock = mockFetch(
+      graphqlFetch(({ query }: { query: string }) =>
+        query.includes('comments(page')
+          ? { comments: makePage([opened], { page: 2, pageCount: 3 }) }
+          : { comment: opened },
+      ),
+    )
+    const scrollTo = vi.fn<(options: ScrollToOptions) => void>()
+    vi.stubGlobal('scrollTo', scrollTo)
+    const wrapper = await mountAt('/?page=2', fetchMock)
+    const feedLoads = () =>
+      fetchMock.mock.calls.filter(([, init]) => String(init?.body ?? '').includes('"sort"')).length
+    vi.stubGlobal('scrollY', 1234)
+
+    await router.push({ name: 'thread', params: { id: '42' } })
+    await flushPromises()
+    vi.stubGlobal('scrollY', 0)
+    await wrapper.find('a[href="/?page=2"]').trigger('click') // "← All comments"
+    await flushPromises()
+
+    expect(router.currentRoute.value.fullPath).toBe('/?page=2')
+    expect(feedLoads()).toBe(1) // kept alive, not loaded again
+    expect(scrollTo).toHaveBeenCalledWith({ top: 1234, behavior: 'instant' })
   })
 })

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { computed, nextTick, onActivated, ref, watch } from 'vue'
+import { type LocationQuery, RouterLink, onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 
 import { fetchFeed } from '@/api/comments'
 import type { Comment } from '@/api/types'
@@ -27,16 +27,20 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
-// Page and sort live in the URL: a link reproduces the view, Back/Forward work
-const page = computed(() => parsePage(route.query.page))
-const sort = computed(() => parseSort(route.query.sort))
+// Page and sort live in the URL: a link reproduces the view, Back/Forward work.
+// Kept alive while a thread is open: only the feed's own URL counts, not the thread's
+const feedQuery = computed<LocationQuery>((previous) =>
+  route.name === 'home' ? route.query : (previous ?? {}),
+)
+const page = computed(() => parsePage(feedQuery.value.page))
+const sort = computed(() => parseSort(feedQuery.value.sort))
 
 const feed = useAsync((signal) => fetchFeed(page.value, sortToEnum(sort.value), signal))
 // Signing in or out changes what this visitor may see (own shadowed comments): reload the page too
 watch([page, sort, () => auth.user?.id], () => void feed.run(), { immediate: true })
 
 function setQuery(next: { page?: number; sort?: string }) {
-  const query = { ...route.query, ...next }
+  const query = { ...feedQuery.value, ...next }
   if (!query.page || query.page === 1) delete query.page
   if (!query.sort) delete query.sort
   void router.push({ query })
@@ -84,6 +88,23 @@ watch([() => live.topLevel, () => feed.data.value], async () => {
   }
   await nextTick()
   fresh.forEach((comment) => highlightComment(comment.id))
+})
+
+// Kept alive (App.vue): coming back to the same feed puts it where it was and flashes the opened thread
+let left: { path: string; scrollY: number; threadId: string | null } | null = null
+onBeforeRouteLeave((to, from) => {
+  left = {
+    path: from.fullPath,
+    scrollY: window.scrollY,
+    threadId: to.name === 'thread' ? String(to.params.id) : null,
+  }
+})
+onActivated(async () => {
+  if (!left || left.path !== route.fullPath) return
+  const { scrollY, threadId } = left
+  await nextTick()
+  window.scrollTo({ top: scrollY, behavior: 'instant' })
+  if (threadId) highlightComment(threadId)
 })
 
 function onCreated(comment: Comment) {
