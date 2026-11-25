@@ -43,7 +43,7 @@ const defaultAnswer = (query: string) => {
   return { data: { me: PROFILE } }
 }
 
-async function mountCabinet(fetchMock: FetchMock, signedIn = true) {
+async function mountCabinet(fetchMock: FetchMock, signedIn = true, path = '/me') {
   vi.stubGlobal('fetch', fetchMock)
   const auth = useAuthStore()
   if (signedIn) await auth.login('Rum8', 'pw')
@@ -57,7 +57,7 @@ async function mountCabinet(fetchMock: FetchMock, signedIn = true) {
       { path: '/c/:id', name: 'thread', component: stub },
     ],
   })
-  await router.push('/me')
+  await router.push(path)
   const wrapper = mount(MeView, { global: { plugins: [router] }, attachTo: document.body })
   await flushPromises()
   return wrapper
@@ -173,5 +173,46 @@ describe('cabinet', () => {
 
     expect(wrapper.text()).toContain('Wrong current password')
     expect(useAuthStore().access).not.toBe('new-access')
+  })
+})
+
+describe('bookmarks tab', () => {
+  const bookmarks = (query: string, unbookmark: () => unknown) => {
+    if (query.includes('myBookmarks')) {
+      const items = ['5', '6'].map((id) =>
+        makeComment({ id, text: `Saved ${id}`, bookmarked: true }),
+      )
+      return { data: { myBookmarks: makePage(items) } }
+    }
+    if (query.includes('unbookmark')) return unbookmark()
+    return { data: { me: PROFILE } }
+  }
+
+  it('drops a comment from the list once its bookmark is removed', async () => {
+    const wrapper = await mountCabinet(
+      backend((query) => bookmarks(query, () => ({ data: { unbookmark: false } }))),
+      true,
+      '/me?tab=bookmarks',
+    )
+
+    await wrapper.find('#c-5 [aria-label="Bookmark"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('#c-5').exists()).toBe(false)
+    expect(wrapper.find('#c-6').exists()).toBe(true)
+  })
+
+  it('keeps it when the server refuses', async () => {
+    const wrapper = await mountCabinet(
+      backend((query) => bookmarks(query, () => ({ errors: [{ message: 'Try again later' }] }))),
+      true,
+      '/me?tab=bookmarks',
+    )
+
+    await wrapper.find('#c-5 [aria-label="Bookmark"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('#c-5').exists()).toBe(true)
+    expect(wrapper.find('#c-5 [aria-label="Bookmark"]').attributes('aria-pressed')).toBe('true')
   })
 })

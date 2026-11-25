@@ -99,6 +99,16 @@ function onPage(next: number) {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+/** A bookmark removed on the bookmarks tab leaves the list at once */
+function dropBookmark(id: string) {
+  const data = mine.data.value
+  if (tab.value !== 'bookmarks' || !data) return
+  const items = data.items.filter((comment) => comment.id !== id)
+  mine.data.value = { ...data, items, totalCount: data.totalCount - 1 } // a new object: the data is a shallowRef
+  // The last one on a later page: show the previous page instead of an empty one
+  if (!items.length && page.value > 1) onPage(page.value - 1)
+}
+
 function showTab(next: 'comments' | 'bookmarks') {
   void router.push({ query: next === 'bookmarks' ? { tab: next } : {} })
 }
@@ -247,7 +257,7 @@ function showTab(next: 'comments' | 'bookmarks') {
             :key="comment.id"
             class="rounded-2xl border border-line bg-card p-3 shadow-sm"
           >
-            <CommentCard :comment="comment" no-reply />
+            <CommentCard :comment="comment" no-reply @unbookmarked="dropBookmark(comment.id)" />
           </div>
           <AppPagination :page="page" :page-count="mine.data.value.pageCount" @change="onPage" />
         </template>
