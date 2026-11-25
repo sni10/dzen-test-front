@@ -5,6 +5,7 @@ import { RouterLink, useRouter } from 'vue-router'
 import type { Comment } from '@/api/types'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import UserAvatar from '@/components/ui/UserAvatar.vue'
+import { useReactions } from '@/composables/useReactions'
 import { formatDate, quoteText } from '@/utils/format'
 import { highlightComment } from '@/utils/highlight'
 
@@ -20,6 +21,8 @@ const props = defineProps<{
 const emit = defineEmits<{ reply: [] }>()
 
 const router = useRouter()
+const reactions = useReactions(() => props.comment)
+const { myVote, bookmarked, score, canReact, canVote } = reactions
 
 // Top-level cards line up with the table header (fixed column widths, see CommentTable);
 // replies are indented and narrower, so their fields just flow
@@ -83,11 +86,19 @@ function goToParent() {
         <button
           type="button"
           class="icon-button"
-          disabled
-          title="Bookmarks: sign in (coming soon)"
+          :disabled="!canReact"
+          :title="
+            canReact
+              ? bookmarked
+                ? 'Remove from bookmarks'
+                : 'Add to bookmarks'
+              : 'Sign in to bookmark'
+          "
           aria-label="Bookmark"
+          :aria-pressed="bookmarked"
+          @click="reactions.toggleBookmark()"
         >
-          <AppIcon name="bookmark" />
+          <AppIcon name="bookmark" :filled="bookmarked" />
         </button>
         <button
           v-if="!noReply"
@@ -113,17 +124,49 @@ function goToParent() {
         </button>
       </div>
 
-      <div class="ml-auto flex items-center gap-1 text-muted" aria-label="Rating">
-        <button type="button" class="icon-button" disabled aria-label="Vote up">
+      <div
+        class="ml-auto flex items-center gap-1 text-muted"
+        role="group"
+        aria-label="Rating"
+        :title="canVote ? '' : comment.isMine ? 'Your own comment' : 'Sign in to vote'"
+      >
+        <button
+          type="button"
+          class="icon-button"
+          :class="{ 'text-emerald-600': myVote === 1 }"
+          :disabled="!canVote"
+          aria-label="Vote up"
+          :aria-pressed="myVote === 1"
+          @click="reactions.toggleVote(1)"
+        >
           <AppIcon name="up" :size="16" />
         </button>
-        <span class="min-w-4 text-center font-semibold text-ink">{{ comment.score }}</span>
-        <button type="button" class="icon-button" disabled aria-label="Vote down">
+        <Transition name="score" mode="out-in">
+          <span
+            :key="score"
+            class="min-w-4 text-center font-semibold"
+            :class="score > 0 ? 'text-emerald-600' : score < 0 ? 'text-danger' : 'text-ink'"
+            aria-live="polite"
+            >{{ score }}</span
+          >
+        </Transition>
+        <button
+          type="button"
+          class="icon-button"
+          :class="{ 'text-danger': myVote === -1 }"
+          :disabled="!canVote"
+          aria-label="Vote down"
+          :aria-pressed="myVote === -1"
+          @click="reactions.toggleVote(-1)"
+        >
           <AppIcon name="down" :size="16" />
         </button>
       </div>
     </header>
 
+    <p v-if="reactions.error.value" class="px-3 pt-2 text-xs text-danger" role="alert">
+      {{ reactions.error.value }}
+    </p>
     <div class="px-3 pt-3 pb-1">
       <blockquote
         v-if="quote"
@@ -159,6 +202,21 @@ function goToParent() {
 
 .comment-text {
   white-space: pre-line;
+}
+
+.score-enter-active,
+.score-leave-active {
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.score-enter-from {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+.score-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
 }
 
 .comment.flash {

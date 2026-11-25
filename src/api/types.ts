@@ -42,6 +42,10 @@ export interface Comment {
   rootId: string | null
   parent?: Pick<Comment, 'id' | 'userName' | 'text'> | null
   attachments?: Attachment[]
+  /** Signed-in viewers only: my vote (1 / -1 / null), in my bookmarks, posted by me */
+  myVote?: number | null
+  bookmarked?: boolean
+  isMine?: boolean
   replies?: ReplyPage
 }
 
