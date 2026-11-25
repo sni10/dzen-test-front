@@ -6,10 +6,13 @@ import type { Comment } from '@/api/types'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import UserAvatar from '@/components/ui/UserAvatar.vue'
 import { useReactions } from '@/composables/useReactions'
+import { useAuthStore } from '@/stores/auth'
+import { useLiveStore } from '@/stores/live'
 import { formatDate, quoteText } from '@/utils/format'
 import { highlightComment } from '@/utils/highlight'
 
 import CommentAttachments from './CommentAttachments.vue'
+import ModerationMenu from './ModerationMenu.vue'
 
 const props = defineProps<{
   comment: Comment
@@ -21,7 +24,11 @@ const props = defineProps<{
 const emit = defineEmits<{ reply: [] }>()
 
 const router = useRouter()
-const reactions = useReactions(() => props.comment)
+const live = useLiveStore()
+const auth = useAuthStore()
+/** The comment as loaded, with whatever changed since (a moderator hid or restored it, the author was banned) */
+const shown = computed<Comment>(() => ({ ...props.comment, ...live.updates[props.comment.id] }))
+const reactions = useReactions(() => shown.value)
 const { myVote, bookmarked, score, canReact, canVote } = reactions
 
 // Top-level cards line up with the table header (fixed column widths, see CommentTable);
@@ -32,51 +39,51 @@ const columns = computed(() =>
     : { name: 'sm:shrink-0', email: 'sm:min-w-0 sm:flex-1', date: 'sm:shrink-0' },
 )
 
-const quote = computed(() => (props.comment.parent ? quoteText(props.comment.parent.text) : ''))
+const quote = computed(() => (shown.value.parent ? quoteText(shown.value.parent.text) : ''))
 
 /** Scroll to the parent if it is on the page, otherwise open its thread */
 function goToParent() {
-  const id = props.comment.parentId
+  const id = shown.value.parentId
   if (!id) return
   if (!highlightComment(id, 'center')) void router.push({ name: 'thread', params: { id } })
 }
 </script>
 
 <template>
-  <article :id="`c-${comment.id}`" class="comment rounded-xl transition-colors">
+  <article :id="`c-${shown.id}`" class="comment rounded-xl transition-colors">
     <header
       class="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl bg-card-header px-3 py-2 sm:flex-nowrap"
     >
-      <UserAvatar :name="comment.userName" :size="topLevel ? 44 : 40" />
+      <UserAvatar :name="shown.userName" :size="topLevel ? 44 : 40" />
 
       <div class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-4 gap-y-0.5 sm:flex-nowrap">
         <a
-          v-if="comment.homePage"
-          :href="comment.homePage"
+          v-if="shown.homePage"
+          :href="shown.homePage"
           target="_blank"
           rel="nofollow ugc noopener noreferrer"
           class="truncate font-bold text-ink hover:text-accent"
           :class="columns.name"
-          :title="comment.homePage"
-          >{{ comment.userName }}</a
+          :title="shown.homePage"
+          >{{ shown.userName }}</a
         >
-        <span v-else class="truncate font-bold" :class="columns.name">{{ comment.userName }}</span>
+        <span v-else class="truncate font-bold" :class="columns.name">{{ shown.userName }}</span>
 
-        <span class="truncate text-sm text-muted" :class="columns.email" :title="comment.email">{{
-          comment.email
+        <span class="truncate text-sm text-muted" :class="columns.email" :title="shown.email">{{
+          shown.email
         }}</span>
 
         <time
-          :datetime="comment.createdAt"
+          :datetime="shown.createdAt"
           class="text-sm whitespace-nowrap text-muted"
           :class="columns.date"
-          >{{ formatDate(comment.createdAt) }}</time
+          >{{ formatDate(shown.createdAt) }}</time
         >
       </div>
 
       <div class="flex items-center gap-1 text-accent">
         <RouterLink
-          :to="{ name: 'thread', params: { id: comment.id } }"
+          :to="{ name: 'thread', params: { id: shown.id } }"
           class="icon-button"
           title="Link to this comment"
           aria-label="Link to this comment"
@@ -113,7 +120,7 @@ function goToParent() {
           <AppIcon name="reply" />
         </button>
         <button
-          v-if="comment.parentId"
+          v-if="shown.parentId"
           type="button"
           class="icon-button"
           title="Go to the comment this one replies to"
@@ -122,13 +129,14 @@ function goToParent() {
         >
           <AppIcon name="parent" />
         </button>
+        <ModerationMenu v-if="auth.user?.isModerator" :comment="shown" />
       </div>
 
       <div
         class="ml-auto flex items-center gap-1 text-muted"
         role="group"
         aria-label="Rating"
-        :title="canVote ? '' : comment.isMine ? 'Your own comment' : 'Sign in to vote'"
+        :title="canVote ? '' : shown.isMine ? 'Your own comment' : 'Sign in to vote'"
       >
         <button
           type="button"
@@ -176,17 +184,32 @@ function goToParent() {
         {{ quote }}
       </blockquote>
 
-      <p v-if="comment.isUfo" class="text-muted italic">
-        A UFO flew in and published this inscription here.
+      <p
+        v-if="shown.isShadowed"
+        class="mb-2 inline-block rounded bg-ink/5 px-2 py-0.5 text-xs font-medium text-muted"
+      >
+        shadowed: only the author and moderators see it
       </p>
-      <!-- Sanitized on the server (allowlist: a, code, i, strong); the only v-html in the app -->
+      <template v-if="shown.isUfo">
+        <p class="text-muted italic">A UFO flew in and published this inscription here.</p>
+        <details v-if="shown.originalText" class="mt-2 text-sm">
+          <summary class="cursor-pointer text-muted">Original text (moderators only)</summary>
+          <!-- Sanitized on the server like any comment text -->
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <div
+            class="comment-text mt-1 rounded bg-card-header p-2 break-words"
+            v-html="shown.originalText"
+          />
+        </details>
+      </template>
+      <!-- Sanitized on the server (allowlist: a, code, i, strong) -->
       <template v-else>
         <!-- eslint-disable-next-line vue/no-v-html -->
-        <div class="comment-text leading-relaxed break-words" v-html="comment.text" />
+        <div class="comment-text leading-relaxed break-words" v-html="shown.text" />
         <CommentAttachments
-          v-if="comment.attachments?.length"
-          :comment-id="comment.id"
-          :attachments="comment.attachments"
+          v-if="shown.attachments?.length"
+          :comment-id="shown.id"
+          :attachments="shown.attachments"
         />
       </template>
     </div>

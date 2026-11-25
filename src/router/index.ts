@@ -9,6 +9,11 @@ const router = createRouter({
     { path: '/c/:id(\\d+)', name: 'thread', component: () => import('@/views/ThreadView.vue') },
     { path: '/me', name: 'me', component: () => import('@/views/MeView.vue') },
     {
+      path: '/moderation',
+      name: 'moderation',
+      component: () => import('@/views/ModerationView.vue'),
+    },
+    {
       path: '/reset-password',
       name: 'reset-password',
       component: () => import('@/views/ResetPasswordView.vue'),
