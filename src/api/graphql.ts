@@ -1,5 +1,7 @@
 /** Minimal GraphQL client: POST to /graphql on the same origin (Caddy / the Vite proxy route it to Django). */
 
+import { authHeaders } from './session'
+
 export class GraphQLRequestError extends Error {
   constructor(
     message: string,
@@ -24,7 +26,11 @@ export async function gql<T>(
   try {
     response = await fetch('/graphql', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        ...(await authHeaders()),
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
       credentials: 'same-origin', // the guest cookie identifies the author of shadow-banned comments
       body: JSON.stringify({ query, variables }),
       signal,
