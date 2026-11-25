@@ -10,6 +10,7 @@ type LiveEvent =
   | { type: 'comment.created'; comment: Comment }
   | { type: 'attachment.updated'; commentId: string; attachment: Attachment }
   | { type: 'comment.score'; commentId: string; score: number }
+  | { type: 'comment.updated'; comment: Comment }
 
 export type LiveStatus = 'connecting' | 'online' | 'offline'
 
@@ -28,6 +29,12 @@ export const useLiveStore = defineStore('live', () => {
   const attachments = reactive<Record<string, Attachment[]>>({})
   /** The latest rating of a comment, from anyone's vote */
   const scores = reactive<Record<string, number>>({})
+  /** A comment changed after it was loaded (hidden or restored by a moderator, shadowed): fields to overlay */
+  const updates = reactive<Record<string, Partial<Comment>>>({})
+
+  function patch(id: string, fields: Partial<Comment>) {
+    updates[id] = { ...updates[id], ...fields }
+  }
 
   let lastId = 0
   let socket: WebSocket | null = null
@@ -52,7 +59,10 @@ export const useLiveStore = defineStore('live', () => {
   function apply(event: LiveEvent) {
     if (event.type === 'comment.created') addComment(event.comment)
     else if (event.type === 'comment.score') scores[event.commentId] = event.score
-    else if (event.type === 'attachment.updated') {
+    else if (event.type === 'comment.updated') {
+      const { text, isUfo, attachments } = event.comment
+      patch(event.comment.id, { text, isUfo, attachments })
+    } else if (event.type === 'attachment.updated') {
       const current = attachments[event.commentId] ?? []
       attachments[event.commentId] = [
         ...current.filter((item) => item.id !== event.attachment.id),
@@ -129,6 +139,8 @@ export const useLiveStore = defineStore('live', () => {
     replies,
     attachments,
     scores,
+    updates,
+    patch,
     remember,
     addComment,
     connect,
