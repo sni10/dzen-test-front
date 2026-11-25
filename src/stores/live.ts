@@ -4,6 +4,8 @@ import { reactive, ref } from 'vue'
 import { fetchSince } from '@/api/comments'
 import type { Attachment, Comment } from '@/api/types'
 
+import { useAuthStore } from './auth'
+
 type LiveEvent =
   | { type: 'comment.created'; comment: Comment }
   | { type: 'attachment.updated'; commentId: string; attachment: Attachment }
@@ -64,30 +66,40 @@ export const useLiveStore = defineStore('live', () => {
     }
   }
 
-  function connect() {
+  async function connect() {
     stopped = false
     clearTimeout(retry)
     status.value = 'connecting'
     const scheme = location.protocol === 'https:' ? 'wss' : 'ws'
-    socket = new WebSocket(`${scheme}://${location.host}/ws/comments/`)
-    socket.onopen = () => {
+    // Browsers cannot set headers on a WebSocket: the access token goes in the query (signed-in users get
+    // their own shadowed comments; the identity is fixed for the life of the connection)
+    const token = await useAuthStore().token()
+    if (stopped) return
+    const query = token ? `?token=${encodeURIComponent(token)}` : ''
+    const current = new WebSocket(`${scheme}://${location.host}/ws/comments/${query}`)
+    socket = current
+    // Handlers act only for the current socket: a replaced one may still report its close later
+    current.onopen = () => {
+      if (socket !== current) return
       status.value = 'online'
       backoff = 1000
       if (wasOnline) void catchUp()
       wasOnline = true
     }
-    socket.onmessage = (message) => {
+    current.onmessage = (message) => {
+      if (socket !== current) return
       try {
         apply(JSON.parse(String(message.data)) as LiveEvent)
       } catch {
         // ignore a malformed message
       }
     }
-    socket.onclose = () => {
+    current.onclose = () => {
+      if (socket !== current) return
       socket = null
       status.value = 'offline'
       if (stopped) return
-      retry = setTimeout(connect, backoff)
+      retry = setTimeout(() => void connect(), backoff)
       backoff = Math.min(backoff * 2, MAX_BACKOFF_MS)
     }
   }
@@ -95,8 +107,27 @@ export const useLiveStore = defineStore('live', () => {
   function disconnect() {
     stopped = true
     clearTimeout(retry)
-    socket?.close()
+    const closing = socket
+    socket = null
+    closing?.close()
+    status.value = 'offline'
   }
 
-  return { status, topLevel, replies, attachments, remember, addComment, connect, disconnect }
+  /** After signing in or out: the server fixes who is listening when the socket opens */
+  async function reconnect() {
+    disconnect()
+    await connect()
+  }
+
+  return {
+    status,
+    topLevel,
+    replies,
+    attachments,
+    remember,
+    addComment,
+    connect,
+    disconnect,
+    reconnect,
+  }
 })
