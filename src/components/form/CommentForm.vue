@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref, useId } from 'vue'
+import { computed, nextTick, reactive, ref, useId, watch } from 'vue'
 
 import { type NewComment, FIELD_NAMES, postComment, previewComment } from '@/api/posting'
 import { ApiError } from '@/api/rest'
 import type { Comment } from '@/api/types'
 import AppIcon from '@/components/ui/AppIcon.vue'
 import UserAvatar from '@/components/ui/UserAvatar.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useAuthorStore } from '@/stores/author'
 import { validateMarkup } from '@/utils/markup'
 import {
@@ -25,6 +26,7 @@ const props = defineProps<{ parent?: Comment | null }>()
 const emit = defineEmits<{ created: [comment: Comment]; cancel: [] }>()
 
 const author = useAuthorStore()
+const auth = useAuthStore()
 const id = useId()
 
 const form = reactive<NewComment>({
@@ -46,6 +48,17 @@ const textArea = ref<HTMLTextAreaElement | null>(null)
 const captcha = ref<InstanceType<typeof CaptchaField> | null>(null)
 
 const isReply = computed(() => Boolean(props.parent))
+
+// A signed-in user posts under the profile name and e-mail (the server ignores the form values then)
+watch(
+  () => auth.user,
+  (user) => {
+    form.userName = user?.username ?? author.fields.userName
+    form.email = user?.email ?? author.fields.email
+    errors.value = { ...errors.value, userName: undefined, email: undefined }
+  },
+  { immediate: true },
+)
 const textLength = computed(() => form.text.length)
 
 /** Check a field once the user has left it; afterwards re-check on every change */
@@ -122,11 +135,13 @@ async function submit() {
   submitting.value = true
   try {
     const comment = await postComment({ ...form, text: form.text.trim() })
-    author.remember({
-      userName: form.userName.trim(),
-      email: form.email.trim(),
-      homePage: form.homePage.trim(),
-    })
+    if (!auth.isSignedIn) {
+      author.remember({
+        userName: form.userName.trim(),
+        email: form.email.trim(),
+        homePage: form.homePage.trim(),
+      })
+    }
     form.text = ''
     form.attachment = null
     preview.value = null
@@ -166,6 +181,8 @@ async function submit() {
           v-model="form.userName"
           type="text"
           autocomplete="nickname"
+          :readonly="auth.isSignedIn"
+          :title="auth.isSignedIn ? 'From your account' : undefined"
           maxlength="50"
           placeholder="Latin letters and digits"
           class="field w-full"
@@ -185,6 +202,8 @@ async function submit() {
           v-model="form.email"
           type="email"
           autocomplete="email"
+          :readonly="auth.isSignedIn"
+          :title="auth.isSignedIn ? 'From your account' : undefined"
           maxlength="254"
           placeholder="you@example.com"
           class="field w-full"
