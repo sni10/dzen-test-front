@@ -79,6 +79,17 @@ describe('CommentCard', () => {
     expect(router.currentRoute.value.fullPath).toBe('/c/999')
   })
 
+  it('marks a message from the administration', () => {
+    const staff = mountCard({ comment: makeComment({ byModerator: true }) })
+    const regular = mountCard({ comment: makeComment() })
+
+    expect(staff.find('[title="A message from the administration"]').attributes('aria-label')).toBe(
+      'Moderator',
+    )
+    expect(staff.find('header').classes()).toContain('bg-accent/10')
+    expect(regular.find('[title="A message from the administration"]').exists()).toBe(false)
+  })
+
   it('hides the text of a UFO comment', () => {
     const wrapper = mountCard({ comment: makeComment({ isUfo: true, text: 'secret' }) })
 
