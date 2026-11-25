@@ -5,6 +5,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { changePassword, fetchMyComments, fetchProfile, updateProfile } from '@/api/account'
 import { fetchMyBookmarks } from '@/api/reactions'
 import { GraphQLRequestError } from '@/api/graphql'
+import AppIcon from '@/components/ui/AppIcon.vue'
 import CommentCard from '@/components/comments/CommentCard.vue'
 import AppPagination from '@/components/ui/AppPagination.vue'
 import UserAvatar from '@/components/ui/UserAvatar.vue'
@@ -105,7 +106,10 @@ function showTab(next: 'comments' | 'bookmarks') {
 
 <template>
   <div class="space-y-6">
-    <RouterLink to="/" class="text-sm font-medium">← All comments</RouterLink>
+    <RouterLink to="/" class="btn-back">
+      <AppIcon name="chevronLeft" :size="16" />
+      All comments
+    </RouterLink>
 
     <p v-if="!auth.ready" class="h-28 animate-pulse rounded-2xl bg-card-header" aria-busy="true" />
     <p

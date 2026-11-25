@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { type ShadowBan, fetchShadowBans, unban } from '@/api/moderation'
+import AppIcon from '@/components/ui/AppIcon.vue'
 import UserAvatar from '@/components/ui/UserAvatar.vue'
 import { useAsync } from '@/composables/useAsync'
 import { useAuthStore } from '@/stores/auth'
@@ -39,7 +40,10 @@ async function lift(ban: ShadowBan) {
 
 <template>
   <div class="space-y-5">
-    <RouterLink to="/" class="text-sm font-medium">← All comments</RouterLink>
+    <RouterLink to="/" class="btn-back">
+      <AppIcon name="chevronLeft" :size="16" />
+      All comments
+    </RouterLink>
     <h1 class="text-2xl font-bold">Moderation</h1>
 
     <p v-if="!auth.ready" class="h-24 animate-pulse rounded-2xl bg-card-header" aria-busy="true" />
