@@ -339,7 +339,7 @@ describe('posting from the feed', () => {
     await flushPromises()
 
     expect(wrapper.findAll('article').map((a) => a.attributes('id'))).toEqual(['c-500', 'c-7'])
-    expect(wrapper.text()).toContain('2 comments')
+    expect(wrapper.text()).toContain('2 threads')
   })
 
   it('links to the comment when another sort is shown', async () => {

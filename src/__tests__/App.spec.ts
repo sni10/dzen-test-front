@@ -36,7 +36,7 @@ describe('home page', () => {
     const wrapper = await mountAt('/', fetchMock)
 
     expect(variablesOf(fetchMock)).toMatchObject({ page: 1, sort: 'CREATED_AT_DESC' })
-    expect(wrapper.text()).toContain('30 comments')
+    expect(wrapper.text()).toContain('30 threads')
     expect(wrapper.findAll('article')).toHaveLength(2)
     expect(wrapper.find('[aria-label="Pages"]').exists()).toBe(true)
   })
