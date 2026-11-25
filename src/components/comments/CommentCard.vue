@@ -52,22 +52,33 @@ function goToParent() {
 <template>
   <article :id="`c-${shown.id}`" class="comment rounded-xl transition-colors">
     <header
-      class="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl bg-card-header px-3 py-2 sm:flex-nowrap"
+      class="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl px-3 py-2 sm:flex-nowrap"
+      :class="shown.byModerator ? 'bg-accent/10 ring-1 ring-accent/30' : 'bg-card-header'"
     >
       <UserAvatar :name="shown.userName" :size="topLevel ? 44 : 40" />
 
       <div class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-4 gap-y-0.5 sm:flex-nowrap">
-        <a
-          v-if="shown.homePage"
-          :href="shown.homePage"
-          target="_blank"
-          rel="nofollow ugc noopener noreferrer"
-          class="truncate font-bold text-ink hover:text-accent"
-          :class="columns.name"
-          :title="shown.homePage"
-          >{{ shown.userName }}</a
-        >
-        <span v-else class="truncate font-bold" :class="columns.name">{{ shown.userName }}</span>
+        <!-- The name column keeps its width (top-level cards line up with the table header): the badge lives inside -->
+        <span class="flex min-w-0 items-center gap-2" :class="columns.name">
+          <a
+            v-if="shown.homePage"
+            :href="shown.homePage"
+            target="_blank"
+            rel="nofollow ugc noopener noreferrer"
+            class="truncate font-bold text-ink hover:text-accent"
+            :title="shown.homePage"
+            >{{ shown.userName }}</a
+          >
+          <span v-else class="truncate font-bold">{{ shown.userName }}</span>
+          <span
+            v-if="shown.byModerator"
+            class="inline-flex shrink-0 items-center rounded-full bg-accent p-1 text-white"
+            title="A message from the administration"
+            aria-label="Moderator"
+          >
+            <AppIcon name="shield" :size="12" />
+          </span>
+        </span>
 
         <span class="truncate text-sm text-muted" :class="columns.email" :title="shown.email">{{
           shown.email

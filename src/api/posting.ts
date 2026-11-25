@@ -30,6 +30,7 @@ interface RestComment {
   home_page: string
   text: string
   is_ufo: boolean
+  by_moderator: boolean
   replies_count: number
   score: number
   created_at: string
@@ -67,6 +68,7 @@ function fromRest(comment: RestComment): Comment {
     homePage: comment.home_page,
     text: comment.text,
     isUfo: comment.is_ufo,
+    byModerator: comment.by_moderator,
     score: comment.score,
     repliesCount: comment.replies_count,
     depth: comment.depth,

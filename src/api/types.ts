@@ -34,6 +34,8 @@ export interface Comment {
   /** Sanitized HTML from the server: only <a>, <code>, <i>, <strong> */
   text: string
   isUfo: boolean
+  /** Posted by a moderator: a message from the administration */
+  byModerator?: boolean
   score: number
   repliesCount: number
   depth: number

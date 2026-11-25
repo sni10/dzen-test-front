@@ -7,7 +7,7 @@ export const REPLIES_PAGE = 10
 const ATTACHMENT_FIELDS = 'id kind url originalName size width height status'
 
 const FIELDS = `
-  id userName email homePage text isUfo score repliesCount depth createdAt parentId rootId
+  id userName email homePage text isUfo byModerator score repliesCount depth createdAt parentId rootId
   myVote bookmarked isMine originalText isShadowed
   attachments { ${ATTACHMENT_FIELDS} }
 `
