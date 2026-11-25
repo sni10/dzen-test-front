@@ -352,7 +352,7 @@ describe('posting from the feed', () => {
     await wrapper.find('form[aria-label="New comment"]').trigger('submit')
     await flushPromises()
 
-    expect(wrapper.find('[role="status"]').text()).toContain('Your comment is posted')
-    expect(wrapper.find('[role="status"] a').attributes('href')).toBe('/c/500')
+    expect(wrapper.find('main [role="status"]').text()).toContain('Your comment is posted')
+    expect(wrapper.find('main [role="status"] a').attributes('href')).toBe('/c/500')
   })
 })

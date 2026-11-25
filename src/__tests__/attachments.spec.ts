@@ -8,6 +8,7 @@ import CommentAttachments from '@/components/comments/CommentAttachments.vue'
 import CommentForm from '@/components/form/CommentForm.vue'
 import AppLightbox from '@/components/ui/AppLightbox.vue'
 import { useLightboxStore } from '@/stores/lightbox'
+import { useLiveStore } from '@/stores/live'
 import { validateAttachment } from '@/utils/validation'
 
 import { mockFetch } from './helpers/comments'
@@ -192,25 +193,16 @@ describe('CommentAttachments', () => {
     expect(wrapper.text()).toContain('3 KB')
   })
 
-  it('polls while the image is being processed, then shows it', async () => {
-    vi.useFakeTimers()
-    const fetchMock = mockFetch(async () =>
-      json({ data: { comment: { attachments: [attachment()] } } }),
-    )
-    vi.stubGlobal('fetch', fetchMock)
-
+  it('shows a placeholder until the live update says the image is ready', async () => {
     const wrapper = mountAttachments([
       attachment({ status: 'processing', width: null, height: null }),
     ])
     expect(wrapper.text()).toContain('Processing image')
 
-    await vi.advanceTimersByTimeAsync(1600)
+    useLiveStore().attachments['7'] = [attachment()]
     await flushPromises()
 
-    expect(JSON.parse(String(fetchMock.mock.calls[0]![1].body)).variables).toEqual({ id: '7' })
     expect(wrapper.find('[data-lightbox-kind="image"]').exists()).toBe(true)
-    await vi.advanceTimersByTimeAsync(5000)
-    expect(fetchMock).toHaveBeenCalledTimes(1) // ready: polling stopped
   })
 
   it('says when the file could not be processed', () => {

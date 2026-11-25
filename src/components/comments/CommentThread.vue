@@ -4,6 +4,7 @@ import { computed, nextTick, ref } from 'vue'
 import { fetchReplies } from '@/api/comments'
 import type { Comment } from '@/api/types'
 import CommentForm from '@/components/form/CommentForm.vue'
+import { useLiveStore } from '@/stores/live'
 import { useReplyStore } from '@/stores/replies'
 import { pluralize } from '@/utils/format'
 import { highlightComment } from '@/utils/highlight'
@@ -16,9 +17,9 @@ const MAX_INDENT_DEPTH = 6
 const props = defineProps<{ comment: Comment; topLevel?: boolean }>()
 
 const replyStore = useReplyStore()
+const live = useLiveStore()
 
 const loaded = ref<Comment[]>([])
-const posted = ref<Comment[]>([])
 const cursor = ref<string | null>(props.comment.replies?.endCursor ?? null)
 const hasMore = ref(
   props.comment.replies ? props.comment.replies.hasMore : props.comment.repliesCount > 0,
@@ -30,11 +31,13 @@ const replying = computed(() => replyStore.activeId === props.comment.id)
 const replies = computed(() => {
   const known = [...(props.comment.replies?.items ?? []), ...loaded.value]
   const ids = new Set(known.map((reply) => reply.id))
-  // Own replies posted here go last (oldest first order); skip them once a page brings them too
-  return [...known, ...posted.value.filter((reply) => !ids.has(reply.id))]
+  // New replies (mine and live ones) go last, oldest first; skip them once a page brings them too
+  const fresh = (live.replies[props.comment.id] ?? []).filter((reply) => !ids.has(reply.id))
+  return [...known, ...fresh]
 })
+const freshCount = computed(() => live.replies[props.comment.id]?.length ?? 0)
 const remaining = computed(() =>
-  Math.max(props.comment.repliesCount + posted.value.length - replies.value.length, 0),
+  Math.max(props.comment.repliesCount + freshCount.value - replies.value.length, 0),
 )
 const indent = computed(() => props.comment.depth < MAX_INDENT_DEPTH)
 
@@ -65,7 +68,7 @@ async function onReplied(reply: Comment) {
     userName: props.comment.userName,
     text: props.comment.text,
   }
-  posted.value = [...posted.value, { ...reply, parent }]
+  live.addComment({ ...reply, parent })
   await nextTick()
   highlightComment(reply.id)
 }
