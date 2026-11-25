@@ -34,6 +34,8 @@ export interface Comment {
   /** Sanitized HTML from the server: only <a>, <code>, <i>, <strong> */
   text: string
   isUfo: boolean
+  /** Posted by a moderator: a message from the administration */
+  byModerator?: boolean
   score: number
   repliesCount: number
   depth: number
@@ -42,6 +44,13 @@ export interface Comment {
   rootId: string | null
   parent?: Pick<Comment, 'id' | 'userName' | 'text'> | null
   attachments?: Attachment[]
+  /** Signed-in viewers only: my vote (1 / -1 / null), in my bookmarks, posted by me */
+  myVote?: number | null
+  bookmarked?: boolean
+  isMine?: boolean
+  /** Moderators only (null for everyone else): the hidden text, the author is shadow-banned */
+  originalText?: string | null
+  isShadowed?: boolean | null
   replies?: ReplyPage
 }
 

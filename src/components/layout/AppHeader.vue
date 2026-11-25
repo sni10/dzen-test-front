@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 
 import AuthDialog from '@/components/auth/AuthDialog.vue'
 import UserAvatar from '@/components/ui/UserAvatar.vue'
@@ -10,6 +10,15 @@ import { useLiveStore } from '@/stores/live'
 const auth = useAuthStore()
 const live = useLiveStore()
 const dialog = ref<AuthMode | null>(null)
+const router = useRouter()
+const search = ref('')
+
+function submitSearch() {
+  const q = search.value.trim()
+  if (!q) return
+  void router.push({ name: 'search', query: { q } })
+  search.value = ''
+}
 
 const indicator = computed(
   () =>
@@ -34,9 +43,28 @@ const indicator = computed(
         {{ indicator.label }}
       </span>
 
+      <form class="ml-auto hidden md:block" role="search" @submit.prevent="submitSearch">
+        <label for="header-search" class="sr-only">Search comments</label>
+        <input
+          id="header-search"
+          v-model="search"
+          type="search"
+          maxlength="200"
+          placeholder="Search…"
+          class="field w-48 py-1 text-sm transition-all focus:w-64"
+        />
+      </form>
+
       <!-- Nothing until the session restore finishes: no "Sign in" flash for a signed-in user -->
-      <div v-if="auth.ready" class="ml-auto flex items-center gap-2 text-sm">
+      <div v-if="auth.ready" class="flex items-center gap-2 text-sm max-md:ml-auto">
         <template v-if="auth.user">
+          <RouterLink
+            v-if="auth.user.isModerator"
+            :to="{ name: 'moderation' }"
+            class="rounded-lg px-2 py-1 font-medium text-accent hover:bg-card-header"
+          >
+            Moderation
+          </RouterLink>
           <RouterLink
             :to="{ name: 'me' }"
             class="flex items-center gap-2 rounded-lg px-1 text-ink hover:text-accent"

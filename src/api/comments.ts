@@ -7,7 +7,8 @@ export const REPLIES_PAGE = 10
 const ATTACHMENT_FIELDS = 'id kind url originalName size width height status'
 
 const FIELDS = `
-  id userName email homePage text isUfo score repliesCount depth createdAt parentId rootId
+  id userName email homePage text isUfo byModerator score repliesCount depth createdAt parentId rootId
+  myVote bookmarked isMine originalText isShadowed
   attachments { ${ATTACHMENT_FIELDS} }
 `
 const REPLY_FIELDS = `${FIELDS} parent { id userName text }`
@@ -99,4 +100,50 @@ query Since($lastId: ID!) { commentsSince(lastId: $lastId) { ${REPLY_FIELDS} } }
 export async function fetchSince(lastId: string): Promise<Comment[]> {
   const data = await gql<{ commentsSince: Comment[] }>(SINCE_QUERY, { lastId })
   return data.commentsSince
+}
+
+export interface Stats {
+  comments: number
+  ufo: number
+  /** Public on purpose: everyone sees how many comments are under a shadow ban */
+  shadowed: number
+  myComments: number | null
+  myBookmarks: number | null
+}
+
+export async function fetchStats(): Promise<Stats> {
+  const data = await gql<{ stats: Stats }>(
+    '{ stats { comments ufo shadowed myComments myBookmarks } }',
+  )
+  return data.stats
+}
+
+export interface SearchHit {
+  comment: Comment
+  /** HTML from the server: the text escaped, <mark> around the matches */
+  highlight: string | null
+}
+
+export interface SearchPage {
+  items: SearchHit[]
+  totalCount: number
+  page: number
+  pageCount: number
+}
+
+const SEARCH_QUERY = `
+query Search($query: String!, $page: Int!) {
+  search(query: $query, page: $page) {
+    totalCount page pageCount
+    items { highlight comment { ${REPLY_FIELDS} } }
+  }
+}`
+
+export async function searchComments(
+  query: string,
+  page: number,
+  signal?: AbortSignal,
+): Promise<SearchPage> {
+  const data = await gql<{ search: SearchPage }>(SEARCH_QUERY, { query, page }, signal)
+  return data.search
 }

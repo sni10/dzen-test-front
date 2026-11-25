@@ -3,7 +3,9 @@ import { computed, reactive, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { changePassword, fetchMyComments, fetchProfile, updateProfile } from '@/api/account'
+import { fetchMyBookmarks } from '@/api/reactions'
 import { GraphQLRequestError } from '@/api/graphql'
+import AppIcon from '@/components/ui/AppIcon.vue'
 import CommentCard from '@/components/comments/CommentCard.vue'
 import AppPagination from '@/components/ui/AppPagination.vue'
 import UserAvatar from '@/components/ui/UserAvatar.vue'
@@ -18,12 +20,18 @@ const route = useRoute()
 const router = useRouter()
 
 const page = computed(() => parsePage(route.query.page))
+/** Tab in the URL: ?tab=bookmarks */
+const tab = computed(() => (route.query.tab === 'bookmarks' ? 'bookmarks' : 'comments'))
 const profile = useAsync(() => fetchProfile())
-const mine = useAsync((signal) => fetchMyComments(page.value, signal))
+const mine = useAsync((signal) =>
+  tab.value === 'bookmarks'
+    ? fetchMyBookmarks(page.value, signal)
+    : fetchMyComments(page.value, signal),
+)
 
 // The cabinet follows the session: load once signed in (after a reload the session restores first)
 watch(
-  [() => auth.user?.id, page],
+  [() => auth.user?.id, page, tab],
   ([userId]) => {
     if (!userId) return
     void profile.run()
@@ -86,14 +94,22 @@ async function savePassword() {
 }
 
 function onPage(next: number) {
-  void router.push({ query: next > 1 ? { page: next } : {} })
+  const query = { ...route.query, page: next > 1 ? String(next) : undefined }
+  void router.push({ query })
   window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function showTab(next: 'comments' | 'bookmarks') {
+  void router.push({ query: next === 'bookmarks' ? { tab: next } : {} })
 }
 </script>
 
 <template>
   <div class="space-y-6">
-    <RouterLink to="/" class="text-sm font-medium">← All comments</RouterLink>
+    <RouterLink to="/" class="btn-back">
+      <AppIcon name="chevronLeft" :size="16" />
+      All comments
+    </RouterLink>
 
     <p v-if="!auth.ready" class="h-28 animate-pulse rounded-2xl bg-card-header" aria-busy="true" />
     <p
@@ -193,13 +209,37 @@ function onPage(next: number) {
       </div>
 
       <section class="space-y-4">
-        <h2 class="text-lg font-semibold">My comments</h2>
+        <div class="flex gap-1 border-b border-line" role="tablist" aria-label="My lists">
+          <button
+            v-for="item in [
+              { key: 'comments', label: 'My comments' },
+              { key: 'bookmarks', label: 'Bookmarks' },
+            ] as const"
+            :key="item.key"
+            type="button"
+            role="tab"
+            class="-mb-px border-b-2 px-3 py-2 text-sm font-semibold transition-colors"
+            :class="
+              tab === item.key
+                ? 'border-accent text-accent'
+                : 'border-transparent text-muted hover:text-ink'
+            "
+            :aria-selected="tab === item.key"
+            @click="showTab(item.key)"
+          >
+            {{ item.label }}
+          </button>
+        </div>
         <p v-if="mine.error.value" class="text-danger">{{ mine.error.value }}</p>
         <p
           v-else-if="mine.data.value && !mine.data.value.items.length"
           class="rounded-2xl border border-line bg-card p-6 text-center text-muted"
         >
-          You have not posted anything yet.
+          {{
+            tab === 'bookmarks'
+              ? 'No bookmarks yet: use the bookmark icon on a comment.'
+              : 'You have not posted anything yet.'
+          }}
         </p>
         <template v-else-if="mine.data.value">
           <div

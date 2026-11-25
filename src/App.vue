@@ -27,7 +27,12 @@ onBeforeUnmount(() => live.disconnect())
   <div class="flex min-h-screen flex-col">
     <AppHeader />
     <main class="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
-      <RouterView />
+      <!-- The feed stays alive while a thread is open: back to it without reloading or losing the place -->
+      <RouterView v-slot="{ Component }">
+        <KeepAlive include="HomeView">
+          <component :is="Component" />
+        </KeepAlive>
+      </RouterView>
     </main>
     <AppLightbox />
   </div>
