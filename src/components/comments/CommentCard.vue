@@ -21,7 +21,7 @@ const props = defineProps<{
   /** Lists outside the tree (my comments) have nowhere to open a reply form */
   noReply?: boolean
 }>()
-const emit = defineEmits<{ reply: [] }>()
+const emit = defineEmits<{ reply: []; unbookmarked: [] }>()
 
 const router = useRouter()
 const live = useLiveStore()
@@ -30,6 +30,13 @@ const auth = useAuthStore()
 const shown = computed<Comment>(() => ({ ...props.comment, ...live.updates[props.comment.id] }))
 const reactions = useReactions(() => shown.value)
 const { myVote, bookmarked, score, canReact, canVote } = reactions
+
+/** Tells the list once the bookmark is really gone (the bookmarks tab drops the comment) */
+async function onBookmark() {
+  const was = bookmarked.value
+  const now = await reactions.toggleBookmark()
+  if (was && !now) emit('unbookmarked')
+}
 
 // Top-level cards line up with the table header (fixed column widths, see CommentTable);
 // replies are indented and narrower, so their fields just flow
@@ -114,7 +121,7 @@ function goToParent() {
           "
           aria-label="Bookmark"
           :aria-pressed="bookmarked"
-          @click="reactions.toggleBookmark()"
+          @click="onBookmark"
         >
           <AppIcon name="bookmark" :filled="bookmarked" />
         </button>
