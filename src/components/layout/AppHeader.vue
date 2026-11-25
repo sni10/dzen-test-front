@@ -38,6 +38,13 @@ const indicator = computed(
       <div v-if="auth.ready" class="ml-auto flex items-center gap-2 text-sm">
         <template v-if="auth.user">
           <RouterLink
+            v-if="auth.user.isModerator"
+            :to="{ name: 'moderation' }"
+            class="rounded-lg px-2 py-1 font-medium text-accent hover:bg-card-header"
+          >
+            Moderation
+          </RouterLink>
+          <RouterLink
             :to="{ name: 'me' }"
             class="flex items-center gap-2 rounded-lg px-1 text-ink hover:text-accent"
             title="My cabinet"

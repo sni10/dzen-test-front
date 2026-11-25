@@ -8,7 +8,7 @@ const ATTACHMENT_FIELDS = 'id kind url originalName size width height status'
 
 const FIELDS = `
   id userName email homePage text isUfo score repliesCount depth createdAt parentId rootId
-  myVote bookmarked isMine
+  myVote bookmarked isMine originalText isShadowed
   attachments { ${ATTACHMENT_FIELDS} }
 `
 const REPLY_FIELDS = `${FIELDS} parent { id userName text }`

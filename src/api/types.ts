@@ -46,6 +46,9 @@ export interface Comment {
   myVote?: number | null
   bookmarked?: boolean
   isMine?: boolean
+  /** Moderators only (null for everyone else): the hidden text, the author is shadow-banned */
+  originalText?: string | null
+  isShadowed?: boolean | null
   replies?: ReplyPage
 }
 
