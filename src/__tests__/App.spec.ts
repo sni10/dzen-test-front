@@ -98,6 +98,30 @@ describe('thread page', () => {
   })
 })
 
+describe('paging', () => {
+  it('pages above and below the table; a page change brings the table top into view', async () => {
+    const fetchMock = mockFetch(
+      graphqlFetch({ comments: makePage([makeComment()], { pageCount: 3 }) }),
+    )
+    const scrollIntoView = vi.fn<(options?: ScrollIntoViewOptions) => void>()
+    Element.prototype.scrollIntoView = scrollIntoView
+    const wrapper = await mountAt('/', fetchMock)
+
+    const pagers = wrapper.findAll('[aria-label="Pages"]')
+    expect(pagers).toHaveLength(2)
+    expect(pagers[0]!.element.compareDocumentPosition(wrapper.find('article').element)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    ) // the first one is above the comments
+
+    await wrapper.find('[aria-label="Next page"]').trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.query).toEqual({ page: '2' })
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
+    expect(scrollIntoView.mock.contexts[0]).toBe(wrapper.find('.scroll-mt-4').element)
+  })
+})
+
 describe('back from a thread', () => {
   it('returns to the same feed page and place without reloading it', async () => {
     const opened = makeComment({ id: '42', userName: 'Rum8' })
