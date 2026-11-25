@@ -105,8 +105,8 @@ export async function fetchSince(lastId: string): Promise<Comment[]> {
 export interface Stats {
   comments: number
   ufo: number
-  /** Moderators only, otherwise null: the shadow ban must not give itself away */
-  shadowed: number | null
+  /** Public on purpose: everyone sees how many comments are under a shadow ban */
+  shadowed: number
   myComments: number | null
   myBookmarks: number | null
 }

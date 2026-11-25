@@ -11,7 +11,7 @@ import { makeComment, mockFetch } from './helpers/comments'
 const answer = (stats: Stats) =>
   mockFetch(async () => new Response(JSON.stringify({ data: { stats } })))
 
-const GUEST: Stats = { comments: 12, ufo: 2, shadowed: null, myComments: null, myBookmarks: null }
+const GUEST: Stats = { comments: 12, ufo: 2, shadowed: 4, myComments: null, myBookmarks: null }
 
 async function mountBar(stats: Stats) {
   const fetchMock = answer(stats)
@@ -37,10 +37,10 @@ afterEach(() => {
 })
 
 describe('stats cards', () => {
-  it('a guest sees two cards', async () => {
+  it('everyone sees the three public cards, shadowed included', async () => {
     const { wrapper } = await mountBar(GUEST)
 
-    expect(labels(wrapper)).toEqual(['12 Comments', '2 Hidden by UFO'])
+    expect(labels(wrapper)).toEqual(['12 Comments', '2 Hidden by UFO', '4 Shadowed'])
   })
 
   it('a signed-in user also sees own comments and bookmarks', async () => {
@@ -49,16 +49,10 @@ describe('stats cards', () => {
     expect(labels(wrapper)).toEqual([
       '12 Comments',
       '2 Hidden by UFO',
+      '4 Shadowed',
       '3 My comments',
       '5 My bookmarks',
     ])
-  })
-
-  it('a moderator sees the shadowed count too', async () => {
-    const { wrapper } = await mountBar({ ...GUEST, shadowed: 4, myComments: 0, myBookmarks: 0 })
-
-    expect(labels(wrapper)).toContain('4 Shadowed')
-    expect(wrapper.findAll('li')).toHaveLength(5)
   })
 
   it('refreshes once after a burst of live comments', async () => {
