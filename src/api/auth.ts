@@ -27,6 +27,7 @@ export const AUTH_FIELDS: Record<string, string> = {
   captcha_key: 'captchaAnswer',
   captcha_answer: 'captchaAnswer',
   login: 'login',
+  token: 'token',
   non_field_errors: 'form',
 }
 
@@ -71,3 +72,12 @@ export const refresh = () => post('/api/auth/refresh/')
 export async function logout(): Promise<void> {
   await request('/api/auth/logout/', { method: 'POST', auth: false })
 }
+
+/** Always the same answer: it never reveals whether the address has an account */
+export async function requestPasswordReset(email: string): Promise<void> {
+  await request('/api/auth/password-reset/', { method: 'POST', body: { email }, auth: false })
+}
+
+/** The link from the e-mail: sets the new password and signs this browser in */
+export const confirmPasswordReset = (uid: string, token: string, password: string) =>
+  post('/api/auth/password-reset/confirm/', { uid, token, password })

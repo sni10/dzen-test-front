@@ -5,7 +5,7 @@ import * as api from '@/api/auth'
 import type { Me, Session } from '@/api/auth'
 import { setSessionHooks } from '@/api/session'
 
-export type AuthMode = 'login' | 'register'
+export type AuthMode = 'login' | 'register' | 'forgot'
 
 /** Refresh this long before the access token expires (it lives 15 minutes) */
 const EARLY_MS = 60_000
@@ -78,6 +78,10 @@ export const useAuthStore = defineStore('auth', () => {
     apply(await api.register(data))
   }
 
+  async function resetPassword(uid: string, token: string, password: string) {
+    apply(await api.confirmPasswordReset(uid, token, password))
+  }
+
   async function logout() {
     try {
       await api.logout()
@@ -107,6 +111,7 @@ export const useAuthStore = defineStore('auth', () => {
     restore,
     login,
     register,
+    resetPassword,
     logout,
     setAccess,
     setHomePage,

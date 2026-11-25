@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, useId, watch } from 'vue'
 
-import { AUTH_FIELDS } from '@/api/auth'
+import { AUTH_FIELDS, requestPasswordReset } from '@/api/auth'
 import { ApiError } from '@/api/rest'
 import CaptchaField from '@/components/form/CaptchaField.vue'
 import { type AuthMode, useAuthStore } from '@/stores/auth'
@@ -26,10 +26,19 @@ const firstInput = ref<HTMLInputElement | null>(null)
 const captcha = ref<InstanceType<typeof CaptchaField> | null>(null)
 
 const isRegister = computed(() => mode.value === 'register')
-const title = computed(() => (isRegister.value ? 'Create an account' : 'Sign in'))
+const isForgot = computed(() => mode.value === 'forgot')
+const title = computed(
+  () =>
+    ({ register: 'Create an account', forgot: 'Reset your password', login: 'Sign in' })[
+      mode.value ?? 'login'
+    ],
+)
+/** After asking for a reset link: the same message whether or not the address has an account */
+const linkSent = ref(false)
 
 watch(mode, async (next) => {
   errors.value = {}
+  linkSent.value = false
   form.password = ''
   if (next) {
     await nextTick()
@@ -40,7 +49,9 @@ watch(mode, async (next) => {
 /** The same rules as the server: name as in the comment form, an e-mail, 8+ characters of password */
 function check(): boolean {
   const next: Record<string, string | undefined> = {}
-  if (isRegister.value) {
+  if (isForgot.value) {
+    next.email = validateField('email', form.email)
+  } else if (isRegister.value) {
     next.username = validateField('userName', form.username)
     next.email = validateField('email', form.email)
     next.captchaAnswer = validateField('captchaAnswer', form.captchaAnswer)
@@ -57,6 +68,11 @@ async function submit() {
   if (!check()) return
   submitting.value = true
   try {
+    if (isForgot.value) {
+      await requestPasswordReset(form.email.trim())
+      linkSent.value = true
+      return
+    }
     if (isRegister.value) {
       await auth.register({
         username: form.username.trim(),
@@ -111,7 +127,31 @@ function switchMode() {
         >
           <h2 :id="`${id}-title`" class="text-xl font-bold">{{ title }}</h2>
 
-          <template v-if="isRegister">
+          <template v-if="isForgot">
+            <p
+              v-if="linkSent"
+              class="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+              role="status"
+            >
+              If an account uses this e-mail, a link is on its way. It works for one hour.
+            </p>
+            <div v-else>
+              <label :for="`${id}-reset-email`" class="mb-1 block text-sm font-medium"
+                >E-mail</label
+              >
+              <input
+                :id="`${id}-reset-email`"
+                ref="firstInput"
+                v-model="form.email"
+                type="email"
+                autocomplete="email"
+                class="field w-full"
+                :class="{ 'field-error': errors.email }"
+              />
+              <p v-if="errors.email" class="mt-1 text-sm text-danger">{{ errors.email }}</p>
+            </div>
+          </template>
+          <template v-else-if="isRegister">
             <div>
               <label :for="`${id}-username`" class="mb-1 block text-sm font-medium"
                 >User Name</label
@@ -156,8 +196,18 @@ function switchMode() {
             <p v-if="errors.login" class="mt-1 text-sm text-danger">{{ errors.login }}</p>
           </div>
 
-          <div>
-            <label :for="`${id}-password`" class="mb-1 block text-sm font-medium">Password</label>
+          <div v-if="!isForgot">
+            <div class="mb-1 flex items-baseline justify-between">
+              <label :for="`${id}-password`" class="block text-sm font-medium">Password</label>
+              <button
+                v-if="!isRegister"
+                type="button"
+                class="text-xs font-medium text-accent hover:underline"
+                @click="mode = 'forgot'"
+              >
+                Forgot password?
+              </button>
+            </div>
             <input
               :id="`${id}-password`"
               v-model="form.password"
@@ -186,11 +236,28 @@ function switchMode() {
             {{ errors.form }}
           </p>
 
-          <button type="submit" class="btn-primary w-full" :disabled="submitting">
-            {{ submitting ? 'Please wait…' : isRegister ? 'Create account' : 'Sign in' }}
+          <button v-if="!linkSent" type="submit" class="btn-primary w-full" :disabled="submitting">
+            {{
+              submitting
+                ? 'Please wait…'
+                : isForgot
+                  ? 'Send the link'
+                  : isRegister
+                    ? 'Create account'
+                    : 'Sign in'
+            }}
           </button>
 
-          <p class="text-center text-sm text-muted">
+          <p v-if="isForgot" class="text-center text-sm text-muted">
+            <button
+              type="button"
+              class="font-medium text-accent hover:underline"
+              @click="mode = 'login'"
+            >
+              Back to sign in
+            </button>
+          </p>
+          <p v-else class="text-center text-sm text-muted">
             {{ isRegister ? 'Already have an account?' : 'No account yet?' }}
             <button
               type="button"
