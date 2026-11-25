@@ -7,6 +7,12 @@ const router = createRouter({
   routes: [
     { path: '/', name: 'home', component: HomeView },
     { path: '/c/:id(\\d+)', name: 'thread', component: () => import('@/views/ThreadView.vue') },
+    { path: '/me', name: 'me', component: () => import('@/views/MeView.vue') },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: () => import('@/views/ResetPasswordView.vue'),
+    },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
   scrollBehavior: (_to, _from, saved) => saved ?? undefined,

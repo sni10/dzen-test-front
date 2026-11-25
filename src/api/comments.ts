@@ -12,6 +12,9 @@ const FIELDS = `
 `
 const REPLY_FIELDS = `${FIELDS} parent { id userName text }`
 
+/** A comment with the quote of its parent: for lists outside the tree (my comments) */
+export const COMMENT_FIELDS = REPLY_FIELDS
+
 // The feed brings two levels of replies at once (one SQL query per level on the server);
 // deeper levels and "show more" are loaded on demand with REPLIES_QUERY.
 const FEED_QUERY = `

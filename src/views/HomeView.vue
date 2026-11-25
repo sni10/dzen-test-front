@@ -8,6 +8,7 @@ import CommentTable from '@/components/comments/CommentTable.vue'
 import CommentForm from '@/components/form/CommentForm.vue'
 import AppPagination from '@/components/ui/AppPagination.vue'
 import { useAsync } from '@/composables/useAsync'
+import { useAuthStore } from '@/stores/auth'
 import { useLiveStore } from '@/stores/live'
 import { pluralize } from '@/utils/format'
 import { highlightComment } from '@/utils/highlight'
@@ -23,13 +24,15 @@ import {
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 
 // Page and sort live in the URL: a link reproduces the view, Back/Forward work
 const page = computed(() => parsePage(route.query.page))
 const sort = computed(() => parseSort(route.query.sort))
 
 const feed = useAsync((signal) => fetchFeed(page.value, sortToEnum(sort.value), signal))
-watch([page, sort], () => void feed.run(), { immediate: true })
+// Signing in or out changes what this visitor may see (own shadowed comments): reload the page too
+watch([page, sort, () => auth.user?.id], () => void feed.run(), { immediate: true })
 
 function setQuery(next: { page?: number; sort?: string }) {
   const query = { ...route.query, ...next }

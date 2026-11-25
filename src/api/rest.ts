@@ -1,4 +1,5 @@
-/** REST calls (CAPTCHA, posting, preview): same origin, JSON, field errors in DRF format. */
+/** REST calls (CAPTCHA, posting, preview, auth): same origin, JSON, field errors in DRF format. */
+import { authHeaders, refreshSession } from './session'
 
 export interface MarkupProblem {
   code: string
@@ -26,31 +27,49 @@ function firstMessage(fields: Record<string, string[]>): string | undefined {
 
 export async function request<T>(
   path: string,
-  init: { method?: string; body?: unknown } = {},
+  init: { method?: string; body?: unknown; auth?: boolean } = {},
 ): Promise<T> {
+  const withAuth = init.auth ?? true
   let response: Response
   try {
-    response = await fetch(path, {
-      method: init.method ?? 'GET',
-      headers: {
-        Accept: 'application/json',
-        // FormData sets its own multipart Content-Type with the boundary
-        ...(init.body === undefined || init.body instanceof FormData
-          ? {}
-          : { 'Content-Type': 'application/json' }),
-      },
-      credentials: 'same-origin', // the guest cookie
-      body:
-        init.body === undefined
-          ? undefined
-          : init.body instanceof FormData
-            ? init.body
-            : JSON.stringify(init.body),
-    })
+    response = await send(path, init, withAuth)
+    // An expired access token: refresh once and repeat (the auth endpoints themselves never retry)
+    if (response.status === 401 && withAuth && (await refreshSession())) {
+      response = await send(path, init, withAuth)
+    }
   } catch {
     throw new ApiError('Network error, check the connection', 0)
   }
 
+  return parse<T>(response)
+}
+
+async function send(
+  path: string,
+  init: { method?: string; body?: unknown },
+  withAuth: boolean,
+): Promise<Response> {
+  return fetch(path, {
+    method: init.method ?? 'GET',
+    headers: {
+      ...(withAuth ? await authHeaders() : {}),
+      Accept: 'application/json',
+      // FormData sets its own multipart Content-Type with the boundary
+      ...(init.body === undefined || init.body instanceof FormData
+        ? {}
+        : { 'Content-Type': 'application/json' }),
+    },
+    credentials: 'same-origin', // the guest cookie
+    body:
+      init.body === undefined
+        ? undefined
+        : init.body instanceof FormData
+          ? init.body
+          : JSON.stringify(init.body),
+  })
+}
+
+async function parse<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => null)) as T | ErrorBody | null
   if (response.ok) return body as T
 
