@@ -25,15 +25,7 @@ const cards = computed<Card[]>(() => {
   const all: (Card | null)[] = [
     { key: 'comments', label: 'Comments', value: s.comments, icon: 'message', tone: 'text-accent' },
     { key: 'ufo', label: 'Hidden by UFO', value: s.ufo, icon: 'ufo', tone: 'text-violet-500' },
-    s.shadowed === null
-      ? null
-      : {
-          key: 'shadowed',
-          label: 'Shadowed',
-          value: s.shadowed,
-          icon: 'eyeOff',
-          tone: 'text-muted',
-        },
+    { key: 'shadowed', label: 'Shadowed', value: s.shadowed, icon: 'eyeOff', tone: 'text-muted' },
     s.myComments === null
       ? null
       : {
