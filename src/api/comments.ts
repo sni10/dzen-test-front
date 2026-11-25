@@ -101,3 +101,19 @@ export async function fetchSince(lastId: string): Promise<Comment[]> {
   const data = await gql<{ commentsSince: Comment[] }>(SINCE_QUERY, { lastId })
   return data.commentsSince
 }
+
+export interface Stats {
+  comments: number
+  ufo: number
+  /** Moderators only, otherwise null: the shadow ban must not give itself away */
+  shadowed: number | null
+  myComments: number | null
+  myBookmarks: number | null
+}
+
+export async function fetchStats(): Promise<Stats> {
+  const data = await gql<{ stats: Stats }>(
+    '{ stats { comments ufo shadowed myComments myBookmarks } }',
+  )
+  return data.stats
+}

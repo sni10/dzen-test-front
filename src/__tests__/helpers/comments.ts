@@ -8,10 +8,13 @@ export type FetchMock = Mock<FetchFn>
 /** A typed fetch mock for vi.stubGlobal('fetch', ...) */
 export const mockFetch = (impl: FetchFn): FetchMock => vi.fn<FetchFn>(impl)
 
-/** Variables of the last GraphQL request (other calls, e.g. the CAPTCHA, are skipped) */
+/** Variables of the last GraphQL request that had any (the CAPTCHA and the stats query are skipped) */
 export function lastVariables(fetchMock: FetchMock): Record<string, unknown> {
-  const calls = fetchMock.mock.calls.filter(([url]) => url === '/graphql')
-  return JSON.parse(String(calls[calls.length - 1]![1].body)).variables
+  const variables = fetchMock.mock.calls
+    .filter(([url]) => url === '/graphql')
+    .map(([, init]) => JSON.parse(String(init.body)).variables ?? {})
+    .filter((vars) => Object.keys(vars).length)
+  return variables[variables.length - 1]
 }
 
 let seq = 0

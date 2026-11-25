@@ -5,6 +5,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { fetchFeed } from '@/api/comments'
 import type { Comment } from '@/api/types'
 import CommentTable from '@/components/comments/CommentTable.vue'
+import StatsBar from '@/components/comments/StatsBar.vue'
 import CommentForm from '@/components/form/CommentForm.vue'
 import AppPagination from '@/components/ui/AppPagination.vue'
 import { useAsync } from '@/composables/useAsync'
@@ -106,9 +107,11 @@ function onPage(next: number) {
     <div class="flex items-baseline justify-between">
       <h1 class="text-2xl font-bold">Comments</h1>
       <span v-if="feed.data.value" class="text-sm text-muted">
-        {{ pluralize(feed.data.value.totalCount, 'comment', 'comments') }}
+        {{ pluralize(feed.data.value.totalCount, 'thread', 'threads') }}
       </span>
     </div>
+
+    <StatsBar />
 
     <section class="rounded-2xl border border-line bg-card p-4 shadow-sm sm:p-5">
       <h2 class="mb-4 text-lg font-semibold">Leave a comment</h2>

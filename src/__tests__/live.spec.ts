@@ -116,7 +116,7 @@ describe('live comments on the page', () => {
     await flushPromises()
 
     expect(wrapper.findAll('article').map((a) => a.attributes('id'))).toEqual(['c-99', 'c-1'])
-    expect(wrapper.text()).toContain('2 comments')
+    expect(wrapper.text()).toContain('2 threads')
   })
 
   it('offers a banner instead when another sort is shown', async () => {

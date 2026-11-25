@@ -4,6 +4,7 @@ import { setBookmark, vote } from '@/api/reactions'
 import type { Comment } from '@/api/types'
 import { useAuthStore } from '@/stores/auth'
 import { useLiveStore } from '@/stores/live'
+import { useStatsStore } from '@/stores/stats'
 
 /**
  * Votes and the bookmark of one comment, optimistic: the arrow and the score change at once and roll back
@@ -63,6 +64,7 @@ export function useReactions(comment: () => Comment) {
     bookmarked.value = !before
     try {
       bookmarked.value = await setBookmark(comment().id, !before)
+      useStatsStore().refresh() // the bookmarks card
     } catch (err) {
       bookmarked.value = before
       fail(err)
