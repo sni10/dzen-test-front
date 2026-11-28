@@ -7,6 +7,7 @@ import AppIcon from '@/components/ui/AppIcon.vue'
 import UserAvatar from '@/components/ui/UserAvatar.vue'
 import { useAsync } from '@/composables/useAsync'
 import { useAuthStore } from '@/stores/auth'
+import { useLiveStore } from '@/stores/live'
 import { useStatsStore } from '@/stores/stats'
 import { formatDate, pluralize } from '@/utils/format'
 
@@ -27,7 +28,10 @@ async function lift(ban: ShadowBan) {
   lifting.value = ban.id
   error.value = null
   try {
-    await unban(ban.id)
+    // The feed is kept alive behind this page: unmark the author's comments there too
+    const { commentIds } = await unban(ban.id)
+    const live = useLiveStore()
+    for (const commentId of commentIds) live.patch(commentId, { isShadowed: false })
     bans.data.value = (bans.data.value ?? []).filter((item) => item.id !== ban.id)
     useStatsStore().refresh()
   } catch (err) {
