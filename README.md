@@ -1,5 +1,20 @@
 # dzen-test-front
 
+[![CI](https://github.com/sni10/dzen-test-front/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sni10/dzen-test-front/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/sni10/dzen-test-front?sort=semver)](https://github.com/sni10/dzen-test-front/releases)
+[![Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsni10%2Fdzen-test-front%2Fbadges%2Ftests.json)](https://github.com/sni10/dzen-test-front/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsni10%2Fdzen-test-front%2Fbadges%2Fcoverage.json)](https://github.com/sni10/dzen-test-front/actions/workflows/ci.yml)
+[![Docker image](https://img.shields.io/badge/image-ghcr.io%2Fsni10%2Fdzen--test--front-2496ED?logo=docker&logoColor=white)](https://github.com/sni10/dzen-test-front/pkgs/container/dzen-test-front)
+[![Last commit](https://img.shields.io/github/last-commit/sni10/dzen-test-front)](https://github.com/sni10/dzen-test-front/commits/main)
+
+[![Vue](https://img.shields.io/badge/vue-3.5-4FC08D?logo=vuedotjs&logoColor=white)](https://vuejs.org/)
+[![TypeScript](https://img.shields.io/badge/typescript-6.0-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/vite-8-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![Pinia](https://img.shields.io/badge/pinia-4-FFD859)](https://pinia.vuejs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/tailwind_css-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Vitest](https://img.shields.io/badge/vitest-4-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
+[![Node](https://img.shields.io/badge/node-24-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+
 Фронтенд тестового задания «SPA-комментарии»: древовидные комментарии с сортировкой и пагинацией, CAPTCHA,
 панель разметки с предпросмотром, вложения с лайтбоксом, обновления в реальном времени по WebSocket,
 голоса и закладки, кабинет, поиск, модерация.
