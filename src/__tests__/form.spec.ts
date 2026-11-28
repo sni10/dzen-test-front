@@ -6,6 +6,7 @@ import App from '@/App.vue'
 import CommentThread from '@/components/comments/CommentThread.vue'
 import CommentForm from '@/components/form/CommentForm.vue'
 import appRouter from '@/router'
+import { useAuthStore } from '@/stores/auth'
 import { useAuthorStore } from '@/stores/author'
 import { cleanAttribute, wrapSelection } from '@/utils/markup-edit'
 
@@ -162,6 +163,30 @@ describe('CommentForm', () => {
     expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('')
     expect(wrapper.find('img').attributes('src')).toBe('data:image/png;base64,2')
     expect(useAuthorStore().fields.userName).toBe('Rum8')
+  })
+
+  it('asks only guests for a CAPTCHA', async () => {
+    const fetchMock = backend()
+    const auth = useAuthStore()
+    auth.user = {
+      id: '1',
+      username: 'Rum8',
+      email: 'rum@example.com',
+      homePage: '',
+      isModerator: false,
+    }
+    const wrapper = await mountForm(fetchMock)
+
+    expect(wrapper.find('img').exists()).toBe(false)
+    await fill(wrapper, { textarea: 'Hello' })
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(posts(fetchMock)).toMatchObject([{ text: 'Hello', captcha_key: '', captcha_answer: '' }])
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/captcha/')).toBe(false)
+
+    auth.user = null // signed out: the CAPTCHA comes back
+    await flushPromises()
+    expect(wrapper.find('img').attributes('src')).toBe('data:image/png;base64,1')
   })
 
   it('does not send an invalid form and shows every problem', async () => {
