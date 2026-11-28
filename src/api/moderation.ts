@@ -9,9 +9,11 @@ export interface ShadowBan {
   createdAt: string
   liftedAt: string | null
   commentsCount: number
+  /** shadowban / unban only: every comment of the author this call hid or showed again */
+  commentIds: string[]
 }
 
-const BAN_FIELDS = 'id userName email isGuest reason createdAt liftedAt commentsCount'
+const BAN_FIELDS = 'id userName email isGuest reason createdAt liftedAt commentsCount commentIds'
 
 export interface HiddenState {
   text: string

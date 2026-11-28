@@ -106,7 +106,9 @@ describe('moderation menu', () => {
   })
 
   it('shadow-bans the author after a confirmation', async () => {
-    const fetchMock = backend(true, () => ({ data: { shadowban: { id: '1' } } }))
+    const fetchMock = backend(true, () => ({
+      data: { shadowban: { id: '1', commentIds: ['8', '12'] } },
+    }))
     const wrapper = await mountCard(makeComment({ id: '8', userName: 'Spammer' }), fetchMock)
 
     await wrapper.find('[aria-label="Moderate"]').trigger('click')
@@ -124,6 +126,7 @@ describe('moderation menu', () => {
       reason: '',
     })
     expect(wrapper.text()).toContain('shadowed: only the author and moderators see it')
+    expect(useLiveStore().updates['12']).toEqual({ isShadowed: true }) // another comment of the author
     expect(wrapper.find('[role="menu"]').exists()).toBe(false)
   })
 
@@ -201,6 +204,7 @@ describe('moderation page', () => {
     createdAt: '2022-05-22T22:30:00',
     liftedAt: null,
     commentsCount: 4,
+    commentIds: [],
   }
 
   async function mountPage(isModerator: boolean, fetchMock: FetchMock) {
@@ -219,7 +223,7 @@ describe('moderation page', () => {
   it('lists the bans and lifts one', async () => {
     const fetchMock = backend(true, (query) =>
       query.includes('unban')
-        ? { data: { unban: { ...BAN, liftedAt: '2022-05-23T00:00:00' } } }
+        ? { data: { unban: { ...BAN, liftedAt: '2022-05-23T00:00:00', commentIds: ['5', '7'] } } }
         : { data: { shadowBans: [BAN] } },
     )
     const wrapper = await mountPage(true, fetchMock)
@@ -235,6 +239,7 @@ describe('moderation page', () => {
 
     expect(graphqlCalls(fetchMock).at(-1)!.variables).toEqual({ id: '3' })
     await vi.waitFor(() => expect(wrapper.text()).toContain('Nobody is banned'))
+    expect(useLiveStore().updates['7']).toEqual({ isShadowed: false })
   })
 
   it('is closed to other users', async () => {

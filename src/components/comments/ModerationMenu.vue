@@ -49,8 +49,9 @@ const toggleUfo = () =>
 
 const ban = () =>
   act(async () => {
-    await shadowban(props.comment.id, hidePast.value, reason.value.trim())
-    live.patch(props.comment.id, { isShadowed: hidePast.value || props.comment.isShadowed })
+    // All of the author's comments on the page, not only this one
+    const { commentIds } = await shadowban(props.comment.id, hidePast.value, reason.value.trim())
+    for (const commentId of commentIds) live.patch(commentId, { isShadowed: true })
   })
 
 /** composedPath() is taken when the click happens: a menu item that re-rendered away during the click
