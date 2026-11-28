@@ -75,11 +75,17 @@ export function validateField(field: FormField, value: string): string | undefin
   }
 }
 
-export function validateForm(data: Pick<NewComment, FormField | 'attachment'>): FieldErrors {
+/** `captcha: false` for a signed-in author: only guests answer a CAPTCHA */
+export function validateForm(
+  data: Pick<NewComment, FormField | 'attachment'>,
+  { captcha = true } = {},
+): FieldErrors {
   const errors: FieldErrors = {}
   const attachment = validateAttachment(data.attachment)
   if (attachment) errors.attachment = attachment
-  for (const field of ['userName', 'email', 'homePage', 'text', 'captchaAnswer'] as const) {
+  const fields: FormField[] = ['userName', 'email', 'homePage', 'text']
+  if (captcha) fields.push('captchaAnswer')
+  for (const field of fields) {
     const error = validateField(field, data[field])
     if (error) errors[field] = error
   }

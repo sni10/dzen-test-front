@@ -56,7 +56,15 @@ watch(
     form.userName = user?.username ?? author.fields.userName
     form.email = user?.email ?? author.fields.email
     if (user?.homePage && !form.homePage) form.homePage = user.homePage
-    errors.value = { ...errors.value, userName: undefined, email: undefined }
+    // Only guests answer a CAPTCHA; signing out shows the field, which loads a new one
+    form.captchaKey = ''
+    form.captchaAnswer = ''
+    errors.value = {
+      ...errors.value,
+      userName: undefined,
+      email: undefined,
+      captchaAnswer: undefined,
+    }
   },
   { immediate: true },
 )
@@ -130,7 +138,7 @@ function applyServerErrors(error: ApiError) {
 async function submit() {
   for (const field of ['userName', 'email', 'homePage', 'text', 'captchaAnswer'] as const)
     touched.add(field)
-  errors.value = validateForm(form)
+  errors.value = validateForm(form, { captcha: !auth.isSignedIn })
   if (Object.keys(errors.value).length) return focusFirstError()
 
   submitting.value = true
@@ -300,6 +308,7 @@ async function submit() {
     />
 
     <CaptchaField
+      v-if="!auth.isSignedIn"
       ref="captcha"
       v-model:answer="form.captchaAnswer"
       v-model:captcha-key="form.captchaKey"
